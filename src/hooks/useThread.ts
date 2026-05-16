@@ -21,6 +21,10 @@ export function useThread(threadId: number | null) {
     setState(s => ({ ...s, loading: true, error: null }))
     try {
       const json = await fetchThread(String(id))
+      if (!json || typeof (json as ThreadDetails).thread_id === 'undefined') {
+        setState(s => ({ ...s, loading: false, error: 'Could not load conversation' }))
+        return
+      }
       setState(s => ({ ...s, data: json as ThreadDetails, loading: false }))
     } catch (e) {
       setState(s => ({ ...s, loading: false, error: (e as Error).message ?? 'Network error' }))
@@ -51,21 +55,25 @@ export function useThread(threadId: number | null) {
 
       // CSRF expired: silently refresh thread and retry once
       if (result?.ok === false || result?.error?.includes?.('csrf')) {
-        const fresh = await fetchThread(String(current.thread_id)) as ThreadDetails
+        const fresh = (await fetchThread(String(current.thread_id))) as ThreadDetails | null
+        if (!fresh) {
+          setState(s => ({ ...s, sending: false, error: 'Could not refresh conversation' }))
+          return false
+        }
         const retry = await sendMessage(
           fresh.csrf,
           String(fresh.other_id),
           text,
           String(fresh.thread_id),
         )
-        const refreshed = await fetchThread(String(current.thread_id)) as ThreadDetails
-        setState(s => ({ ...s, data: refreshed, sending: false }))
+        const refreshed = (await fetchThread(String(current.thread_id))) as ThreadDetails | null
+        setState(s => ({ ...s, data: refreshed ?? s.data, sending: false }))
         return retry?.ok !== false
       }
 
       // Refresh thread to surface the sent message
-      const updated = await fetchThread(String(current.thread_id)) as ThreadDetails
-      setState(s => ({ ...s, data: updated, sending: false }))
+      const updated = (await fetchThread(String(current.thread_id))) as ThreadDetails | null
+      setState(s => ({ ...s, data: updated ?? s.data, sending: false }))
       return true
     } catch (e) {
       setState(s => ({ ...s, sending: false, error: (e as Error).message ?? 'Send failed' }))

@@ -126,8 +126,9 @@ function ThreadView({ threadId, onBack, onViewProfile, geo }: ThreadProps) {
 
   if (loading) return <Spinner label="Loading conversation…" />
   if (error) return <ErrorBanner message={error} onRetry={refresh} />
+  if (!data) return null
 
-  const { other_name, other_photo, other_id, messages, distance } = data!
+  const { other_name, other_photo, other_id, messages, distance } = data
 
   return (
     <div
