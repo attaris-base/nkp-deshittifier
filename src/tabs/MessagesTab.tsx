@@ -34,10 +34,10 @@ function fmtDate(raw: Date | string): string {
 interface InboxProps {
   threads: Thread[]
   onSelect: (t: Thread) => void
-  onRefresh: () => void
+  onViewProfile: (senderId: number) => void
 }
 
-function InboxView({ threads, onSelect }: InboxProps) {
+function InboxView({ threads, onSelect, onViewProfile }: InboxProps) {
   if (threads.length === 0) {
     return (
       <div class="nkp-empty">
@@ -51,28 +51,35 @@ function InboxView({ threads, onSelect }: InboxProps) {
   return (
     <div class="nkp-list">
       {threads.map((t) => (
-        <button
+        <div
           key={t.thread_id}
-          type="button"
           class={`nkp-thread-row${t.unread > 0 ? ' unread' : ''}`}
-          onClick={() => onSelect(t)}
         >
-          <Avatar
-            src={t.sender_photo}
-            name={t.sender_name}
-            badge={t.unread > 0 ? t.unread : undefined}
-          />
-          <div class="nkp-thread-body">
-            <div class="nkp-thread-sender">{t.sender_name}</div>
-            <div class="nkp-thread-preview">{t.preview}</div>
-            {t.distance && (
-              <DopplerBadge doppler={t.distance.doppler} distance={t.distance.distance} />
-            )}
-          </div>
-          <div class="nkp-thread-meta">
-            <span class="nkp-thread-time">{fmtDate(t.last_date)}</span>
-          </div>
-        </button>
+          <button
+            type="button"
+            class="nkp-avatar-btn"
+            onClick={() => onViewProfile(t.sender_id)}
+            aria-label={`View ${t.sender_name}'s profile`}
+          >
+            <Avatar
+              src={t.sender_photo}
+              name={t.sender_name}
+              badge={t.unread > 0 ? t.unread : undefined}
+            />
+          </button>
+          <button type="button" class="nkp-thread-content" onClick={() => onSelect(t)}>
+            <div class="nkp-thread-body">
+              <div class="nkp-thread-sender">{t.sender_name}</div>
+              <div class="nkp-thread-preview">{t.preview}</div>
+              {t.distance && (
+                <DopplerBadge doppler={t.distance.doppler} distance={t.distance.distance} />
+              )}
+            </div>
+            <div class="nkp-thread-meta">
+              <span class="nkp-thread-time">{fmtDate(t.last_date)}</span>
+            </div>
+          </button>
+        </div>
       ))}
     </div>
   )
@@ -138,14 +145,7 @@ function ThreadView({ threadId, onBack, onViewProfile, geo }: ThreadProps) {
         </button>
         <button
           type="button"
-          class="nkp-header-title"
-          style={{
-            background: 'none',
-            border: 'none',
-            cursor: 'pointer',
-            color: 'inherit',
-            font: 'inherit',
-          }}
+          class="nkp-btn-reset nkp-header-title"
           onClick={() => onViewProfile({ id: other_id, lat: geo.lat, lng: geo.lng })}
         >
           {other_name}
@@ -294,7 +294,7 @@ export function MessagesTab({
         <InboxView
           threads={inbox.data.threads}
           onSelect={(t) => setActiveThreadId(t.thread_id)}
-          onRefresh={inbox.refresh}
+          onViewProfile={(id) => onViewProfile({ id, lat: geoCache.lat, lng: geoCache.lng })}
         />
       )}
     </div>

@@ -131,16 +131,23 @@ export const STYLES = `
 .nkp-btn-primary{background:var(--accent);color:#fff}
 .nkp-btn-outline{background:transparent;border:1px solid var(--border);color:var(--text-muted)}
 .nkp-btn-full{width:100%}
+.nkp-btn-reset{background:none;border:none;padding:0;cursor:pointer;color:inherit;font:inherit}
 
 /* Inbox list item */
 .nkp-thread-row{
   display:flex;align-items:center;gap:12px;
-  padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;
+  padding:12px 16px;border-bottom:1px solid var(--border);
 }
-.nkp-thread-row:active{background:var(--bg-card)}
+.nkp-avatar-btn{background:none;border:none;padding:0;cursor:pointer;flex-shrink:0;line-height:0}
+.nkp-thread-content{
+  flex:1;min-width:0;display:flex;align-items:center;gap:12px;
+  background:none;border:none;cursor:pointer;text-align:left;color:inherit;
+  font:inherit;padding:0;
+}
+.nkp-thread-content:active,.nkp-avatar-btn:active{opacity:.7}
 .nkp-thread-row.unread .nkp-thread-sender{font-weight:700;color:var(--text)}
 .nkp-thread-body{flex:1;min-width:0}
-.nkp-thread-sender{font-size:14px;font-weight:500;color:var(--text-muted)}
+.nkp-thread-sender{font-size:14px;font-weight:500;color:var(--text)}
 .nkp-thread-preview{
   font-size:12px;color:var(--text-dim);
   white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px;
