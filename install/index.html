@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+  <title>Install NKP Deshittifier</title>
+  <style>
+    :root {
+      --bg: #09090f; --bg-2: #0d0d1a; --bg-card: #16161f;
+      --border: #1e1e2e; --accent: #e040fb; --accent-2: #7c4dff;
+      --text: #f0f0f0; --text-muted: #888; --text-dim: #555;
+      --radius: 8px;
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg); color: var(--text);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      font-size: 15px; line-height: 1.6;
+      min-height: 100vh; display: flex; flex-direction: column; align-items: center;
+      padding: 32px 20px 48px;
+    }
+    .logo {
+      font-size: 13px; font-weight: 700; letter-spacing: 2px;
+      color: var(--accent); text-transform: uppercase; margin-bottom: 8px;
+    }
+    h1 { font-size: 22px; font-weight: 800; color: var(--text); text-align: center; }
+    .sub { font-size: 14px; color: var(--text-muted); text-align: center; margin-top: 6px; max-width: 360px; }
+    .card {
+      background: var(--bg-2); border: 1px solid var(--border);
+      border-radius: var(--radius); padding: 24px; width: 100%; max-width: 440px;
+      margin-top: 32px;
+    }
+    .card h2 { font-size: 14px; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 16px; }
+
+    /* Drag target */
+    #drag-target {
+      display: block; text-decoration: none; text-align: center;
+      padding: 16px 24px; border-radius: var(--radius);
+      border: 2px dashed var(--accent);
+      background: rgba(224,64,251,.06);
+      color: var(--accent); font-size: 16px; font-weight: 700;
+      cursor: grab; user-select: none;
+      transition: background .15s, border-color .15s;
+    }
+    #drag-target:hover { background: rgba(224,64,251,.12); }
+    #drag-target:active { cursor: grabbing; }
+    .drag-hint { font-size: 12px; color: var(--text-dim); text-align: center; margin-top: 10px; }
+
+    /* Copy button */
+    .copy-row { display: flex; gap: 10px; margin-top: 20px; align-items: center; }
+    .copy-row span { font-size: 13px; color: var(--text-muted); flex: 1; }
+    #copy-btn {
+      background: transparent; border: 1px solid var(--border);
+      color: var(--text-muted); font-size: 12px; font-weight: 600;
+      padding: 7px 14px; border-radius: 20px; cursor: pointer;
+      font-family: inherit; white-space: nowrap; transition: color .15s, border-color .15s;
+    }
+    #copy-btn:hover { border-color: var(--accent); color: var(--accent); }
+    #copy-btn.copied { border-color: #4caf50; color: #4caf50; }
+
+    /* Mobile steps */
+    .steps { display: flex; flex-direction: column; gap: 14px; }
+    .step { display: flex; gap: 14px; align-items: flex-start; }
+    .step-num {
+      width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+      background: var(--accent); color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 12px; font-weight: 700;
+    }
+    .step-body { flex: 1; }
+    .step-title { font-size: 14px; font-weight: 600; color: var(--text); }
+    .step-detail { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+    .browser-tabs { display: flex; gap: 8px; margin-top: 12px; }
+    .browser-tab {
+      padding: 5px 12px; border-radius: 20px; font-size: 11px; font-weight: 600;
+      cursor: pointer; border: 1px solid var(--border); color: var(--text-muted);
+      background: transparent; font-family: inherit;
+    }
+    .browser-tab.active { border-color: var(--accent); color: var(--accent); background: rgba(224,64,251,.08); }
+    #safari-steps, #chrome-steps { display: none; }
+    #safari-steps.visible, #chrome-steps.visible { display: block; }
+    .browser-steps { margin-top: 14px; padding: 14px; background: var(--bg-card); border-radius: var(--radius); }
+    .browser-steps ol { padding-left: 18px; display: flex; flex-direction: column; gap: 8px; }
+    .browser-steps li { font-size: 13px; color: var(--text-muted); }
+    .browser-steps li strong { color: var(--text); }
+    .browser-steps code {
+      background: var(--bg); border: 1px solid var(--border);
+      padding: 1px 5px; border-radius: 4px; font-size: 11px; color: var(--accent);
+      word-break: break-all;
+    }
+
+    /* Mobile copy button (big) */
+    #mobile-copy-btn {
+      display: block; width: 100%; padding: 14px;
+      background: var(--accent); color: #fff; border: none; border-radius: var(--radius);
+      font-size: 16px; font-weight: 700; cursor: pointer; font-family: inherit;
+      transition: opacity .15s; text-align: center;
+    }
+    #mobile-copy-btn:active { opacity: .85; }
+    #mobile-copy-btn.copied { background: #4caf50; }
+
+    .test-link {
+      display: block; text-align: center; margin-top: 20px;
+      color: var(--accent); font-size: 14px; font-weight: 600;
+      text-decoration: none;
+    }
+    .test-link:hover { text-decoration: underline; }
+
+    /* Visibility helpers */
+    .desktop-only { display: none; }
+    .mobile-only  { display: none; }
+  </style>
+</head>
+<body>
+  <div class="logo">NKP</div>
+  <h1>Install the Deshittifier</h1>
+  <p class="sub">A bookmarklet that replaces nastykinkpigs.com's broken UI with a clean dashboard — messages, nearby users, and profiles.</p>
+
+  <!-- Desktop card -->
+  <div class="card desktop-only" id="desktop-card">
+    <h2>1 · Drag this to your bookmarks bar</h2>
+    <a id="drag-target" href="#bookmarklet-placeholder" draggable="true">
+      ☆ NKP Deshittifier
+    </a>
+    <p class="drag-hint">Drag the button above to your browser's bookmarks bar</p>
+
+    <div class="copy-row">
+      <span>Can't drag? Copy the code manually.</span>
+      <button id="copy-btn" type="button">Copy code</button>
+    </div>
+  </div>
+
+  <!-- Mobile card -->
+  <div class="card mobile-only" id="mobile-card">
+    <h2>Install in 3 steps</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <div class="step-title">Copy the bookmarklet code</div>
+          <div class="step-detail">Tap the button below to copy it to your clipboard.</div>
+          <button id="mobile-copy-btn" type="button" style="margin-top:10px">
+            Copy code
+          </button>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <div class="step-title">Bookmark any page, then edit the bookmark</div>
+          <div class="browser-tabs">
+            <button class="browser-tab active" data-browser="safari" type="button">Safari iOS</button>
+            <button class="browser-tab" data-browser="chrome" type="button">Chrome Android</button>
+          </div>
+          <div id="safari-steps" class="browser-steps visible">
+            <ol>
+              <li>Tap the <strong>Share</strong> button (box with arrow)</li>
+              <li>Tap <strong>Add Bookmark</strong> → Save</li>
+              <li>Open <strong>Bookmarks</strong> and find the one you just added</li>
+              <li>Tap <strong>Edit</strong> → clear the URL field → paste the copied code</li>
+              <li>Tap <strong>Done</strong></li>
+            </ol>
+          </div>
+          <div id="chrome-steps" class="browser-steps">
+            <ol>
+              <li>Tap ⋮ menu → <strong>Bookmarks</strong> → <strong>Save</strong></li>
+              <li>Go back to ⋮ → <strong>Bookmarks</strong></li>
+              <li>Long-press the bookmark → <strong>Edit bookmark</strong></li>
+              <li>Clear the URL field → paste the copied code → Save</li>
+            </ol>
+          </div>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <div class="step-title">Test it!</div>
+          <div class="step-detail">Navigate to nastykinkpigs.com, open Bookmarks, and tap <strong>NKP Deshittifier</strong>.</div>
+        </div>
+      </div>
+    </div>
+
+    <a class="test-link" href="https://nastykinkpigs.com" target="_blank" rel="noopener">
+      Go to nastykinkpigs.com →
+    </a>
+  </div>
+
+  <script>
+    (function () {
+      // ── Bookmarklet payload ───────────────────────────────────────────────
+      var BUNDLE_URL = 'https://attaris-base.github.io/nkp-deshittifier/bundle.js';
+      var bookmarklet = 'javascript:(function(){' +
+        "var s=document.createElement('script');" +
+        "s.src='" + BUNDLE_URL + "?t='+Date.now();" +
+        "s.onerror=function(){alert('NKP Deshittifier failed to load — check your connection')};" +
+        "document.head.appendChild(s)" +
+        '})();';
+
+      // ── Detect mobile ─────────────────────────────────────────────────────
+      var isMobile = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      document.getElementById(isMobile ? 'mobile-card' : 'desktop-card').style.display = 'block';
+
+      // ── Wire up drag target (desktop) ─────────────────────────────────────
+      var dragTarget = document.getElementById('drag-target');
+      if (dragTarget) dragTarget.href = bookmarklet;
+
+      // ── Copy helpers ──────────────────────────────────────────────────────
+      function copyToClipboard(btn, label) {
+        navigator.clipboard.writeText(bookmarklet).then(function () {
+          btn.textContent = '✓ Copied!';
+          btn.classList.add('copied');
+          setTimeout(function () {
+            btn.textContent = label;
+            btn.classList.remove('copied');
+          }, 2500);
+        }).catch(function () {
+          // Fallback for older mobile browsers
+          var ta = document.createElement('textarea');
+          ta.value = bookmarklet;
+          ta.style.cssText = 'position:fixed;opacity:0;top:0;left:0';
+          document.body.appendChild(ta);
+          ta.focus(); ta.select();
+          document.execCommand('copy');
+          document.body.removeChild(ta);
+          btn.textContent = '✓ Copied!';
+          btn.classList.add('copied');
+          setTimeout(function () {
+            btn.textContent = label;
+            btn.classList.remove('copied');
+          }, 2500);
+        });
+      }
+
+      var copyBtn = document.getElementById('copy-btn');
+      if (copyBtn) copyBtn.addEventListener('click', function () { copyToClipboard(copyBtn, 'Copy code'); });
+
+      var mobileCopyBtn = document.getElementById('mobile-copy-btn');
+      if (mobileCopyBtn) mobileCopyBtn.addEventListener('click', function () { copyToClipboard(mobileCopyBtn, 'Copy code'); });
+
+      // ── Browser tab switcher ──────────────────────────────────────────────
+      document.querySelectorAll('.browser-tab').forEach(function (tab) {
+        tab.addEventListener('click', function () {
+          document.querySelectorAll('.browser-tab').forEach(function (t) { t.classList.remove('active'); });
+          tab.classList.add('active');
+          var browser = tab.getAttribute('data-browser');
+          document.getElementById('safari-steps').classList.toggle('visible', browser === 'safari');
+          document.getElementById('chrome-steps').classList.toggle('visible', browser === 'chrome');
+        });
+      });
+    })();
+  </script>
+</body>
+</html>

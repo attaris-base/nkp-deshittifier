@@ -19,6 +19,9 @@ export default defineConfig({
     __BUNDLE_URL__: JSON.stringify(BUNDLE_URL),
   },
 
+  // Serve install/ directory as static assets → dist/index.html etc.
+  publicDir: 'install',
+
   // Dev server for local harness page
   server: {
     port: 5173,
