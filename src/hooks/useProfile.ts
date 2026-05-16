@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback } from 'preact/hooks'
+import { useCallback, useEffect, useState } from 'preact/hooks'
+import type { SelectedProfile } from '../App'
 import { fetchProfileData } from '../api'
 import type { Profile } from '../types/api.types'
-import type { SelectedProfile } from '../App'
 
 export interface ProfileState {
   data: Profile | null

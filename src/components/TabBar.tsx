@@ -8,8 +8,8 @@ interface Props {
 
 const TABS: { id: TabId; icon: string; label: string }[] = [
   { id: 'messages', icon: '✉', label: 'Msgs' },
-  { id: 'nearby',   icon: '⊕', label: 'Nearby' },
-  { id: 'profile',  icon: '◉', label: 'Profile' },
+  { id: 'nearby', icon: '⊕', label: 'Nearby' },
+  { id: 'profile', icon: '◉', label: 'Profile' },
 ]
 
 export function TabBar({ active, onChange, unreadCount = 0 }: Props) {
@@ -17,6 +17,7 @@ export function TabBar({ active, onChange, unreadCount = 0 }: Props) {
     <nav class="nkp-tabbar" aria-label="Main navigation">
       {TABS.map(({ id, icon, label }) => (
         <button
+          type="button"
           key={id}
           class={`nkp-tab${active === id ? ' active' : ''}`}
           onClick={() => onChange(id)}

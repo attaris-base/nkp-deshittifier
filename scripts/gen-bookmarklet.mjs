@@ -4,12 +4,12 @@
  *   node scripts/gen-bookmarklet.mjs                   # production (GitHub Pages)
  *   node scripts/gen-bookmarklet.mjs --dev             # localhost:5173 (vite preview)
  */
-import { execSync } from 'child_process'
+import { execSync } from 'node:child_process'
 
 const isDev = process.argv.includes('--dev')
 
 const PROD_URL = 'https://attaris-base.github.io/nkp-deshittifier/bundle.js'
-const DEV_URL  = 'http://localhost:5173/bundle.js'
+const DEV_URL = 'http://localhost:5173/bundle.js'
 const url = isDev ? DEV_URL : PROD_URL
 
 const bookmarklet =
@@ -21,7 +21,9 @@ const bookmarklet =
   `})();`
 
 let sha = 'dev'
-try { sha = execSync('git rev-parse --short HEAD').toString().trim() } catch {}
+try {
+  sha = execSync('git rev-parse --short HEAD').toString().trim()
+} catch {}
 
 console.log()
 console.log(`NKP Deshittifier bookmarklet (${isDev ? 'DEV' : 'PROD'}, build: ${sha})`)

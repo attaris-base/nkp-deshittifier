@@ -1,12 +1,12 @@
-import { useState, useEffect, useRef, useCallback } from 'preact/hooks'
+import { useEffect, useRef, useState } from 'preact/hooks'
 import type { SelectedProfile } from '../App'
-import { useInbox } from '../hooks/useInbox'
-import { useThread } from '../hooks/useThread'
 import { Avatar } from '../components/Avatar'
 import { DopplerBadge } from '../components/DopplerBadge'
-import { Spinner } from '../components/Spinner'
 import { ErrorBanner } from '../components/ErrorBanner'
-import type { Thread, Message } from '../types/api.types'
+import { Spinner } from '../components/Spinner'
+import { useInbox } from '../hooks/useInbox'
+import { useThread } from '../hooks/useThread'
+import type { Message, Thread } from '../types/api.types'
 
 interface Props {
   onViewProfile: (p: SelectedProfile) => void
@@ -25,8 +25,7 @@ function fmtDate(raw: Date | string): string {
     d.getDate() === now.getDate()
   if (sameDay) return d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
   const diff = now.getTime() - d.getTime()
-  if (diff < 7 * 86400_000)
-    return d.toLocaleDateString([], { weekday: 'short' })
+  if (diff < 7 * 86400_000) return d.toLocaleDateString([], { weekday: 'short' })
   return d.toLocaleDateString([], { month: 'short', day: 'numeric' })
 }
 
@@ -38,7 +37,7 @@ interface InboxProps {
   onRefresh: () => void
 }
 
-function InboxView({ threads, onSelect, onRefresh }: InboxProps) {
+function InboxView({ threads, onSelect }: InboxProps) {
   if (threads.length === 0) {
     return (
       <div class="nkp-empty">
@@ -51,14 +50,12 @@ function InboxView({ threads, onSelect, onRefresh }: InboxProps) {
 
   return (
     <div class="nkp-list">
-      {threads.map(t => (
-        <div
+      {threads.map((t) => (
+        <button
           key={t.thread_id}
+          type="button"
           class={`nkp-thread-row${t.unread > 0 ? ' unread' : ''}`}
           onClick={() => onSelect(t)}
-          role="button"
-          tabIndex={0}
-          onKeyDown={e => e.key === 'Enter' && onSelect(t)}
         >
           <Avatar
             src={t.sender_photo}
@@ -69,16 +66,13 @@ function InboxView({ threads, onSelect, onRefresh }: InboxProps) {
             <div class="nkp-thread-sender">{t.sender_name}</div>
             <div class="nkp-thread-preview">{t.preview}</div>
             {t.distance && (
-              <DopplerBadge
-                doppler={t.distance.doppler}
-                distance={t.distance.distance}
-              />
+              <DopplerBadge doppler={t.distance.doppler} distance={t.distance.distance} />
             )}
           </div>
           <div class="nkp-thread-meta">
             <span class="nkp-thread-time">{fmtDate(t.last_date)}</span>
           </div>
-        </div>
+        </button>
       ))}
     </div>
   )
@@ -105,7 +99,9 @@ function ThreadView({ threadId, onBack, onViewProfile, geo }: ThreadProps) {
 
   // Swipe-right to go back
   const touchStartX = useRef(0)
-  const handleTouchStart = (e: TouchEvent) => { touchStartX.current = e.touches[0].clientX }
+  const handleTouchStart = (e: TouchEvent) => {
+    touchStartX.current = e.touches[0].clientX
+  }
   const handleTouchEnd = (e: TouchEvent) => {
     if (e.changedTouches[0].clientX - touchStartX.current > 80) onBack()
   }
@@ -137,25 +133,34 @@ function ThreadView({ threadId, onBack, onViewProfile, geo }: ThreadProps) {
       onTouchEnd={handleTouchEnd}
     >
       <div class="nkp-header">
-        <button class="nkp-header-back" onClick={onBack} aria-label="Back to inbox">‹</button>
+        <button type="button" class="nkp-header-back" onClick={onBack} aria-label="Back to inbox">
+          ‹
+        </button>
         <button
+          type="button"
           class="nkp-header-title"
-          style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'inherit', font: 'inherit' }}
+          style={{
+            background: 'none',
+            border: 'none',
+            cursor: 'pointer',
+            color: 'inherit',
+            font: 'inherit',
+          }}
           onClick={() => onViewProfile({ id: other_id, lat: geo.lat, lng: geo.lng })}
         >
           {other_name}
         </button>
         {distance && <DopplerBadge doppler={distance.doppler} distance={distance.distance} />}
-        <button class="nkp-header-action" onClick={refresh} aria-label="Refresh">↻</button>
+        <button type="button" class="nkp-header-action" onClick={refresh} aria-label="Refresh">
+          ↻
+        </button>
       </div>
 
       <div style={{ flex: 1, overflowY: 'auto', paddingBottom: '8px' }}>
         <div class="nkp-thread-scroll">
           {messages.map((m: Message) => (
             <div key={m.id} class={`nkp-bubble-row${m.is_me ? ' me' : ' them'}`}>
-              {!m.is_me && (
-                <Avatar src={other_photo} name={other_name} size="sm" />
-              )}
+              {!m.is_me && <Avatar src={other_photo} name={other_name} size="sm" />}
               <div>
                 <div class="nkp-bubble-time">{fmtDate(m.date)}</div>
                 <div class="nkp-bubble">{m.text}</div>
@@ -177,12 +182,20 @@ function ThreadView({ threadId, onBack, onViewProfile, geo }: ThreadProps) {
           disabled={sending}
         />
         <button
+          type="button"
           class="nkp-compose-send"
           onClick={handleSend}
           disabled={!text.trim() || sending}
           aria-label="Send message"
         >
-          {sending ? <div class="nkp-spinner" style={{ width: '16px', height: '16px', borderWidth: '2px' }} /> : '↑'}
+          {sending ? (
+            <div
+              class="nkp-spinner"
+              style={{ width: '16px', height: '16px', borderWidth: '2px' }}
+            />
+          ) : (
+            '↑'
+          )}
         </button>
       </div>
     </div>
@@ -195,18 +208,30 @@ function ThreadView({ threadId, onBack, onViewProfile, geo }: ThreadProps) {
 const geoCache = { lat: 0, lng: 0 }
 if (typeof navigator !== 'undefined' && navigator.geolocation) {
   navigator.geolocation.getCurrentPosition(
-    p => { geoCache.lat = p.coords.latitude; geoCache.lng = p.coords.longitude },
-    () => { /* use 0,0 fallback */ },
+    (p) => {
+      geoCache.lat = p.coords.latitude
+      geoCache.lng = p.coords.longitude
+    },
+    () => {
+      /* use 0,0 fallback */
+    },
     { maximumAge: 300_000 },
   )
 }
 
-export function MessagesTab({ onViewProfile, pendingThreadId, onThreadOpened, onUnreadChange }: Props) {
+export function MessagesTab({
+  onViewProfile,
+  pendingThreadId,
+  onThreadOpened,
+  onUnreadChange,
+}: Props) {
   const inbox = useInbox()
   const [activeThreadId, setActiveThreadId] = useState<number | null>(null)
 
   // Propagate unread count upward
-  useEffect(() => { onUnreadChange(inbox.unreadCount) }, [inbox.unreadCount, onUnreadChange])
+  useEffect(() => {
+    onUnreadChange(inbox.unreadCount)
+  }, [inbox.unreadCount, onUnreadChange])
 
   // Open a specific thread if requested from Profile tab
   // pendingThreadId === 0 means "new thread" (API parent_id TBD) — just open inbox for now
@@ -226,7 +251,9 @@ export function MessagesTab({ onViewProfile, pendingThreadId, onThreadOpened, on
         <div class="nkp-overlay-icon">🔒</div>
         <div class="nkp-overlay-title">Not logged in</div>
         <div class="nkp-overlay-sub">
-          <a href="https://nastykinkpigs.com/login" target="_self">Log in to nastykinkpigs.com</a>
+          <a href="https://nastykinkpigs.com/login" target="_self">
+            Log in to nastykinkpigs.com
+          </a>
         </div>
       </div>
     )
@@ -236,7 +263,10 @@ export function MessagesTab({ onViewProfile, pendingThreadId, onThreadOpened, on
     return (
       <ThreadView
         threadId={activeThreadId}
-        onBack={() => { setActiveThreadId(null); inbox.refresh() }}
+        onBack={() => {
+          setActiveThreadId(null)
+          inbox.refresh()
+        }}
         onViewProfile={onViewProfile}
         geo={geoCache}
       />
@@ -247,7 +277,14 @@ export function MessagesTab({ onViewProfile, pendingThreadId, onThreadOpened, on
     <div>
       <div class="nkp-header">
         <span class="nkp-header-title">Messages</span>
-        <button class="nkp-header-action" onClick={inbox.refresh} aria-label="Refresh inbox">↻</button>
+        <button
+          type="button"
+          class="nkp-header-action"
+          onClick={inbox.refresh}
+          aria-label="Refresh inbox"
+        >
+          ↻
+        </button>
       </div>
       {inbox.loading && <Spinner label="Loading messages…" />}
       {inbox.error && !inbox.loading && (
@@ -256,7 +293,7 @@ export function MessagesTab({ onViewProfile, pendingThreadId, onThreadOpened, on
       {inbox.data && !inbox.loading && (
         <InboxView
           threads={inbox.data.threads}
-          onSelect={t => setActiveThreadId(t.thread_id)}
+          onSelect={(t) => setActiveThreadId(t.thread_id)}
           onRefresh={inbox.refresh}
         />
       )}

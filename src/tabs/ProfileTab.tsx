@@ -1,10 +1,10 @@
 import type { SelectedProfile } from '../App'
-import { useProfile } from '../hooks/useProfile'
-import { useInbox } from '../hooks/useInbox'
 import { Avatar } from '../components/Avatar'
 import { DopplerBadge } from '../components/DopplerBadge'
-import { Spinner } from '../components/Spinner'
 import { ErrorBanner } from '../components/ErrorBanner'
+import { Spinner } from '../components/Spinner'
+import { useInbox } from '../hooks/useInbox'
+import { useProfile } from '../hooks/useProfile'
 import type { Photo } from '../types/api.types'
 
 interface Props {
@@ -31,7 +31,7 @@ export function ProfileTab({ profile, onOpenThread }: Props) {
   if (!data) return null
 
   // Find existing thread for this user so Message button can open it
-  const existingThread = inbox.data?.threads.find(t => t.sender_id === data.id)
+  const existingThread = inbox.data?.threads.find((t) => t.sender_id === data.id)
 
   function handleMessage() {
     if (existingThread) {
@@ -69,7 +69,7 @@ export function ProfileTab({ profile, onOpenThread }: Props) {
             <img
               key={i}
               src={p.url}
-              alt={`Photo ${i + 1}`}
+              alt={`Gallery ${i + 1}`}
               class="nkp-photo-thumb"
               loading="lazy"
             />
@@ -112,7 +112,11 @@ export function ProfileTab({ profile, onOpenThread }: Props) {
       {/* Message button */}
       {!data.is_me && (
         <div class="nkp-msg-btn-wrap">
-          <button class="nkp-btn nkp-btn-primary nkp-btn-full" onClick={handleMessage}>
+          <button
+            type="button"
+            class="nkp-btn nkp-btn-primary nkp-btn-full"
+            onClick={handleMessage}
+          >
             ✉ Message {data.nick}
           </button>
         </div>

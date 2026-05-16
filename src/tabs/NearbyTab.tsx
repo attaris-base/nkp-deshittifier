@@ -1,12 +1,12 @@
 import { useEffect } from 'preact/hooks'
 import type { SelectedProfile } from '../App'
-import { useGeo } from '../hooks/useGeo'
-import { useGrid } from '../hooks/useGrid'
 import { Avatar } from '../components/Avatar'
 import { DopplerBadge } from '../components/DopplerBadge'
-import { Spinner } from '../components/Spinner'
 import { ErrorBanner } from '../components/ErrorBanner'
-import type { Pig, Heat } from '../types/api.types'
+import { Spinner } from '../components/Spinner'
+import { useGeo } from '../hooks/useGeo'
+import { useGrid } from '../hooks/useGrid'
+import type { Heat, Pig } from '../types/api.types'
 
 interface Props {
   onViewProfile: (p: SelectedProfile) => void
@@ -30,13 +30,7 @@ function HeatLabel({ heat }: { heat: Heat }) {
 function UserCard({ pig, onSelect }: { pig: Pig; onSelect: () => void }) {
   const ringColor = pig.doppler?.hue_oklch ?? undefined
   return (
-    <div
-      class="nkp-user-card"
-      onClick={onSelect}
-      role="button"
-      tabIndex={0}
-      onKeyDown={e => e.key === 'Enter' && onSelect()}
-    >
+    <button type="button" class="nkp-user-card" onClick={onSelect}>
       <div style={{ position: 'relative' }}>
         <Avatar
           src={pig.avatar}
@@ -54,7 +48,7 @@ function UserCard({ pig, onSelect }: { pig: Pig; onSelect: () => void }) {
         </div>
         <DopplerBadge doppler={pig.doppler} distance={pig.distance_str} />
       </div>
-    </div>
+    </button>
   )
 }
 
@@ -63,7 +57,9 @@ export function NearbyTab({ onViewProfile }: Props) {
   const grid = useGrid(geo.lat ?? 0, geo.lng ?? 0)
 
   // Request location on mount, then load grid once we have coords
-  useEffect(() => { geo.request() }, [])
+  useEffect(() => {
+    geo.request()
+  }, [])
   useEffect(() => {
     if (geo.lat != null && geo.lng != null && !geo.loading) {
       grid.refresh()
@@ -84,6 +80,7 @@ export function NearbyTab({ onViewProfile }: Props) {
             Allow location access in your browser settings, then tap retry.
           </div>
           <button
+            type="button"
             class="nkp-btn nkp-btn-outline"
             style={{ marginTop: '16px' }}
             onClick={() => geo.request()}
@@ -99,7 +96,9 @@ export function NearbyTab({ onViewProfile }: Props) {
     <div>
       <div class="nkp-header">
         <span class="nkp-header-title">Nearby</span>
-        <button class="nkp-header-action" onClick={grid.refresh} aria-label="Refresh">↻</button>
+        <button type="button" class="nkp-header-action" onClick={grid.refresh} aria-label="Refresh">
+          ↻
+        </button>
       </div>
 
       {/* Filter bar */}
@@ -107,41 +106,47 @@ export function NearbyTab({ onViewProfile }: Props) {
         <select
           class="nkp-filter-select"
           value={grid.filters.radius}
-          onChange={e => grid.applyFilters({ radius: Number((e.target as HTMLSelectElement).value) })}
+          onChange={(e) =>
+            grid.applyFilters({ radius: Number((e.target as HTMLSelectElement).value) })
+          }
           aria-label="Radius"
         >
-          {[5, 10, 25, 50, 100].map(r => (
-            <option key={r} value={r}>{r} mi</option>
+          {[5, 10, 25, 50, 100].map((r) => (
+            <option key={r} value={r}>
+              {r} mi
+            </option>
           ))}
         </select>
 
         <select
           class="nkp-filter-select"
           value={grid.filters.window}
-          onChange={e => grid.applyFilters({ window: (e.target as HTMLSelectElement).value })}
+          onChange={(e) => grid.applyFilters({ window: (e.target as HTMLSelectElement).value })}
           aria-label="Time window"
         >
-          {WINDOW_OPTIONS.map(w => (
-            <option key={w} value={w}>{w}</option>
+          {WINDOW_OPTIONS.map((w) => (
+            <option key={w} value={w}>
+              {w}
+            </option>
           ))}
         </select>
 
         <select
           class="nkp-filter-select"
           value={grid.filters.position}
-          onChange={e => grid.applyFilters({ position: (e.target as HTMLSelectElement).value })}
+          onChange={(e) => grid.applyFilters({ position: (e.target as HTMLSelectElement).value })}
           aria-label="Position"
         >
-          {POSITION_OPTIONS.map(p => (
-            <option key={p.value} value={p.value}>{p.label}</option>
+          {POSITION_OPTIONS.map((p) => (
+            <option key={p.value} value={p.value}>
+              {p.label}
+            </option>
           ))}
         </select>
       </div>
 
       {(geo.loading || grid.loading) && <Spinner label="Finding nearby users…" />}
-      {grid.error && !grid.loading && (
-        <ErrorBanner message={grid.error} onRetry={grid.refresh} />
-      )}
+      {grid.error && !grid.loading && <ErrorBanner message={grid.error} onRetry={grid.refresh} />}
 
       {!grid.loading && grid.pigs.length === 0 && !grid.error && (
         <div class="nkp-empty">
@@ -151,16 +156,17 @@ export function NearbyTab({ onViewProfile }: Props) {
         </div>
       )}
 
-      {grid.pigs.map(pig => (
+      {grid.pigs.map((pig) => (
         <UserCard
           key={pig.id}
           pig={pig}
-          onSelect={() => onViewProfile({ id: pig.id, lat: geo.lat!, lng: geo.lng! })}
+          onSelect={() => onViewProfile({ id: pig.id, lat: geo.lat ?? 0, lng: geo.lng ?? 0 })}
         />
       ))}
 
       {grid.hasMore && (
         <button
+          type="button"
           class="nkp-load-more"
           onClick={grid.loadMore}
           disabled={grid.loadingMore}

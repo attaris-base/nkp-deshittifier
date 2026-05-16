@@ -8,7 +8,7 @@ export function ErrorBanner({ message = 'Something went wrong.', onRetry }: Prop
     <div class="nkp-error" role="alert">
       <span class="nkp-error-text">⚠️ {message}</span>
       {onRetry && (
-        <button class="nkp-retry-btn" onClick={onRetry}>
+        <button type="button" class="nkp-retry-btn" onClick={onRetry}>
           Retry
         </button>
       )}

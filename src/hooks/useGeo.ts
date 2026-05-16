@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'preact/hooks'
+import { useCallback, useState } from 'preact/hooks'
 
 export interface GeoState {
   lat: number | null
@@ -26,18 +26,18 @@ export function useGeo() {
       return
     }
     if (!navigator.geolocation) {
-      setState(s => ({ ...s, loading: false, error: 'Geolocation not supported' }))
+      setState((s) => ({ ...s, loading: false, error: 'Geolocation not supported' }))
       return
     }
-    setState(s => ({ ...s, loading: true, error: null, denied: false }))
+    setState((s) => ({ ...s, loading: true, error: null, denied: false }))
     navigator.geolocation.getCurrentPosition(
-      pos => {
+      (pos) => {
         cached = { lat: pos.coords.latitude, lng: pos.coords.longitude }
         setState({ lat: cached.lat, lng: cached.lng, loading: false, denied: false, error: null })
       },
-      err => {
+      (err) => {
         const denied = err.code === err.PERMISSION_DENIED
-        setState(s => ({
+        setState((s) => ({
           ...s,
           loading: false,
           denied,

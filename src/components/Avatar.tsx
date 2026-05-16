@@ -24,9 +24,7 @@ export function Avatar({ src, name, size = 'md', ringColor, badge }: Props) {
       ) : (
         <div class="nkp-avatar-placeholder">{initial}</div>
       )}
-      {badge != null && badge > 0 && (
-        <span class="nkp-badge">{badge > 99 ? '99+' : badge}</span>
-      )}
+      {badge != null && badge > 0 && <span class="nkp-badge">{badge > 99 ? '99+' : badge}</span>}
     </div>
   )
 }

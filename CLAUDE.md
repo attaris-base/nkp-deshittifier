@@ -15,13 +15,39 @@ npm install          # first time setup
 npm run dev          # build in watch mode (rebuilds on every save)
 npm run preview      # serve dist/ at http://localhost:5173
 npm run build        # production build → dist/bundle.js
+npm run check        # lint + format (writes fixes) — run before committing
+npm run lint         # lint only (no writes)
+npm run format       # format only (writes)
 node scripts/gen-bookmarklet.mjs          # print production bookmarklet URL
 node scripts/gen-bookmarklet.mjs --dev    # print localhost:5173 bookmarklet URL
 ```
 
 **Dev workflow:** run `npm run dev` in one terminal, `npm run preview` in another, grab the dev bookmarklet URL and install it as a bookmark, then fire it on nastykinkpigs.com.
 
+**Before committing:** run `npm run check` — it formats and lints in one pass, writing all safe fixes automatically.
+
 **Deploy:** push to `main` → GitHub Actions builds and deploys `dist/` to the `gh-pages` branch automatically. Bundle size target: < 50 KB gzipped.
+
+---
+
+## Linting & formatting (Biome)
+
+Biome 2.x (`@biomejs/biome`) is the single tool for both formatting and linting. Config lives in `biome.json` at the repo root.
+
+**Style enforced:**
+- 2-space indent, LF line endings, 100-char line width
+- Single quotes in JS/TS, double quotes in JSX attributes
+- No semicolons (`"asNeeded"`)
+- Trailing commas in JS/TS
+
+**Key rules enabled on top of `recommended`:**
+- `noUnusedVariables` / `noUnusedImports` → error
+- `noDebugger` → error
+- `useConst` → error
+- `useButtonType` (a11y) → error — all `<button>` elements must have an explicit `type=`
+- `useSemanticElements` (a11y) → error — use `<button>` instead of `<div role="button">`
+
+**Ignored paths:** `node_modules/`, `dist/`, `install/` (plain HTML, no framework).
 
 ---
 

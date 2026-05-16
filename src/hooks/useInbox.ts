@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'preact/hooks'
+import { useCallback, useEffect, useState } from 'preact/hooks'
 import { fetchMail } from '../api'
 import type { CurrentMail } from '../types/api.types'
 
@@ -13,11 +13,15 @@ export function useInbox() {
   const [state, setState] = useState<InboxState>({ data: null, loading: true, error: null })
 
   const load = useCallback(async () => {
-    setState(s => ({ ...s, loading: true, error: null }))
+    setState((s) => ({ ...s, loading: true, error: null }))
     try {
       const json = await fetchMail()
       // Detect logged-out state: API may return a non-object or missing threads
-      if (typeof json !== 'object' || json === null || !Array.isArray((json as CurrentMail).threads)) {
+      if (
+        typeof json !== 'object' ||
+        json === null ||
+        !Array.isArray((json as CurrentMail).threads)
+      ) {
         setState({ data: null, loading: false, error: 'not-logged-in' })
         return
       }
@@ -27,11 +31,15 @@ export function useInbox() {
     }
   }, [])
 
-  useEffect(() => { load() }, [load])
+  useEffect(() => {
+    load()
+  }, [load])
 
   // Re-fetch when window regains focus (user switches tabs and comes back)
   useEffect(() => {
-    const onFocus = () => { if (!document.hidden) load() }
+    const onFocus = () => {
+      if (!document.hidden) load()
+    }
     document.addEventListener('visibilitychange', onFocus)
     return () => document.removeEventListener('visibilitychange', onFocus)
   }, [load])

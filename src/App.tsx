@@ -45,14 +45,9 @@ export function App() {
             onUnreadChange={setUnreadCount}
           />
         )}
-        {activeTab === 'nearby' && (
-          <NearbyTab onViewProfile={handleViewProfile} />
-        )}
+        {activeTab === 'nearby' && <NearbyTab onViewProfile={handleViewProfile} />}
         {activeTab === 'profile' && (
-          <ProfileTab
-            profile={selectedProfile}
-            onOpenThread={handleOpenThread}
-          />
+          <ProfileTab profile={selectedProfile} onOpenThread={handleOpenThread} />
         )}
       </div>
       <TabBar active={activeTab} onChange={setActiveTab} unreadCount={unreadCount} />
