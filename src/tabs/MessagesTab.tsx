@@ -208,9 +208,13 @@ export function MessagesTab({ onViewProfile, pendingThreadId, onThreadOpened, on
   useEffect(() => { onUnreadChange(inbox.unreadCount) }, [inbox.unreadCount, onUnreadChange])
 
   // Open a specific thread if requested from Profile tab
+  // pendingThreadId === 0 means "new thread" (API parent_id TBD) — just open inbox for now
   useEffect(() => {
-    if (pendingThreadId != null) {
+    if (pendingThreadId != null && pendingThreadId > 0) {
       setActiveThreadId(pendingThreadId)
+      onThreadOpened()
+    } else if (pendingThreadId === 0) {
+      // TODO: open new-message compose once API parent_id for new threads is confirmed
       onThreadOpened()
     }
   }, [pendingThreadId, onThreadOpened])
