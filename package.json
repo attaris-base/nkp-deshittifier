@@ -1,0 +1,20 @@
+{
+  "name": "nkp-deshittifier",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite build --watch",
+    "preview": "vite preview --port 5173",
+    "build": "vite build",
+    "gen-bookmarklet": "node scripts/gen-bookmarklet.mjs"
+  },
+  "dependencies": {
+    "preact": "^10.25.4"
+  },
+  "devDependencies": {
+    "@preact/preset-vite": "^2.10.1",
+    "typescript": "^5.8.3",
+    "vite": "^6.3.5"
+  }
+}
