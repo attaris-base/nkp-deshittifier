@@ -1,10 +1,13 @@
 import { useState } from 'preact/hooks'
 import { TabBar } from './components/TabBar'
+// ── MAP FEATURE import (remove to disable) ───────────────────────────────────
+import { MapTab } from './tabs/MapTab'
 import { MessagesTab } from './tabs/MessagesTab'
 import { NearbyTab } from './tabs/NearbyTab'
 import { ProfileTab } from './tabs/ProfileTab'
+// ─────────────────────────────────────────────────────────────────────────────
 
-export type TabId = 'messages' | 'nearby' | 'profile'
+export type TabId = 'messages' | 'nearby' | 'profile' | 'map'
 
 export interface SelectedProfile {
   id: number
@@ -49,6 +52,9 @@ export function App() {
         {activeTab === 'profile' && (
           <ProfileTab profile={selectedProfile} onOpenThread={handleOpenThread} />
         )}
+        {/* ── MAP FEATURE render (remove to disable) ── */}
+        {activeTab === 'map' && <MapTab onViewProfile={handleViewProfile} />}
+        {/* ─────────────────────────────────────────── */}
       </div>
       <TabBar active={activeTab} onChange={setActiveTab} unreadCount={unreadCount} />
     </div>

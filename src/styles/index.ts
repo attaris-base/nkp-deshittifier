@@ -249,4 +249,43 @@ export const STYLES = `
 .nkp-overlay-title{font-size:18px;font-weight:700;color:var(--text)}
 .nkp-overlay-sub{font-size:14px;color:var(--text-muted)}
 .nkp-overlay a{color:var(--accent);text-decoration:none}
+
+/* ── Map Tab (remove this section to disable map feature) ──────────────────── */
+.nkp-map-tab{display:flex;flex-direction:column;height:100%;overflow:hidden}
+.nkp-map-container{flex:1;min-height:0}
+
+.nkp-map-pin{
+  width:40px;height:40px;border-radius:50%;
+  border:2.5px solid var(--accent);overflow:hidden;
+  background:var(--bg-card);box-shadow:0 2px 8px rgba(0,0,0,.5);cursor:pointer;
+}
+.nkp-map-pin-img{width:100%;height:100%;object-fit:cover;display:block}
+.nkp-map-pin--init{
+  display:flex;align-items:center;justify-content:center;
+  font-size:16px;font-weight:700;color:var(--accent);
+}
+
+.nkp-map-avatar{display:block;border-radius:50%;object-fit:cover;border:2px solid var(--accent)}
+.nkp-map-avatar--lg{width:60px;height:60px;margin:0 auto 8px}
+.nkp-map-avatar--init{
+  display:flex;align-items:center;justify-content:center;
+  background:var(--bg-card);color:var(--accent);font-weight:700;
+}
+.nkp-map-avatar--lg.nkp-map-avatar--init{font-size:20px}
+
+.nkp-map-popup{text-align:center;min-width:140px;padding:4px 0}
+.nkp-map-popup-name{font-weight:700;color:var(--text);font-size:15px;margin-bottom:4px}
+.nkp-map-popup-meta{color:var(--text-muted);font-size:11px;margin-bottom:8px}
+.nkp-map-popup-btn{padding:8px 14px;font-size:12px}
+
+.nkp-map-leaflet-popup .leaflet-popup-content-wrapper{
+  background:var(--bg-card);border:1px solid var(--border);
+  border-radius:var(--radius);color:var(--text);
+  box-shadow:0 4px 20px rgba(0,0,0,.6);padding:12px 14px;
+}
+.nkp-map-leaflet-popup .leaflet-popup-content{margin:0}
+.nkp-map-leaflet-popup .leaflet-popup-tip{background:var(--bg-card)}
+.nkp-map-leaflet-popup .leaflet-popup-close-button{color:var(--text-muted)!important;right:8px!important;top:8px!important}
+.nkp-map-leaflet-popup .leaflet-popup-close-button:hover{color:var(--text)!important}
+/* ─────────────────────────────────────────────────────────────────────────── */
 `

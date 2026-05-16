@@ -9,7 +9,8 @@ interface Props {
 const TABS: { id: TabId; icon: string; label: string }[] = [
   { id: 'messages', icon: '✉', label: 'Msgs' },
   { id: 'nearby', icon: '⊕', label: 'Nearby' },
-  { id: 'profile', icon: '◉', label: 'Profile' },
+  // ── MAP FEATURE tab entry (swap back to profile/◉/Profile to disable) ──
+  { id: 'map', icon: '⊙', label: 'Map' },
 ]
 
 export function TabBar({ active, onChange, unreadCount = 0 }: Props) {
