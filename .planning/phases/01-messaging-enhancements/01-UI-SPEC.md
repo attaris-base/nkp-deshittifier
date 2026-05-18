@@ -1,7 +1,8 @@
 ---
 phase: 1
 slug: messaging-enhancements
-status: draft
+status: approved
+reviewed_at: 2026-05-18
 shadcn_initialized: false
 preset: none
 created: 2026-05-18
@@ -41,12 +42,13 @@ Declared values (multiples of 4):
 | 2xl | 48px | Loading state vertical padding |
 | 3xl | 64px | Empty state vertical centering padding |
 
-Exceptions:
-- Search bar vertical padding: 10px (matches `.nkp-filters` and `.nkp-compose` existing pattern)
-- Search bar horizontal padding: 14px input inner, 14px container outer (matches `.nkp-filters`)
-- Touch target minimum: 44px height for the search input field (accessibility minimum)
-- Load more button: 14px vertical padding (matches existing `.nkp-load-more`)
+Exceptions (all values are multiples of 4):
+- Search bar vertical padding: 8px (inner input) / 8px (container)
+- Search bar horizontal padding: 16px input inner, 16px container outer
+- Load more button vertical padding: 16px (matches md token)
 - OINK button area: 16px padding (matches existing `.nkp-msg-btn-wrap`)
+
+Accessibility constraint (not a spacing token): all interactive elements must meet a minimum touch target height of 44px. Enforce via `min-height: 44px` on the search input field — this is an accessibility floor, not a spacing value.
 
 ---
 
@@ -64,8 +66,10 @@ Source: Existing `src/styles/index.ts` — `font-size:14px;line-height:1.5` on `
 New UI elements follow these established sizes:
 - Search input placeholder and value text: 14px weight 400
 - Search input label (if any): 12px weight 400
-- Load more button text: 13px weight 600 (matches `.nkp-load-more`)
-- OINK button text: 13px weight 600 (matches `.nkp-btn`)
+- Load more button text: 14px weight 700
+- OINK button text: 14px weight 700
+
+Maximum 4 declared sizes: 10px, 12px, 14px, 15px. No other sizes permitted in this phase.
 
 ---
 
@@ -101,11 +105,13 @@ Accent reserved for:
 
 **Class:** `.nkp-inbox-search`
 
+**Primary visual anchor:** The thread list is the primary focal point of the inbox view. The search bar is a supporting element positioned above the fold — it is always visible but secondary to the content it filters.
+
 Layout: sticky below the `.nkp-header`, above the thread list. Full-width container with `--bg-2` background and `border-bottom: 1px solid var(--border)`. Always visible — never collapsed.
 
 ```
 .nkp-inbox-search {
-  padding: 10px 14px;
+  padding: 8px 16px;
   background: var(--bg-2);
   border-bottom: 1px solid var(--border);
   position: sticky;
@@ -117,12 +123,12 @@ Layout: sticky below the `.nkp-header`, above the thread list. Full-width contai
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 20px;        /* pill — matches compose input */
-  padding: 10px 16px;
+  padding: 8px 16px;
   color: var(--text);
   font-size: 14px;
   font-family: inherit;
   outline: none;
-  min-height: 44px;           /* touch target minimum */
+  min-height: 44px;           /* accessibility touch target floor — not a spacing token */
 }
 .nkp-inbox-search-input::placeholder { color: var(--text-dim); }
 .nkp-inbox-search-input:focus { border-color: var(--accent); }
@@ -150,13 +156,13 @@ Placed inline at the bottom of the thread list, scrolls with content. Not sticky
 ```
 .nkp-inbox-load-more {
   width: 100%;
-  padding: 14px;
+  padding: 16px 16px;
   background: transparent;
   border: none;
   border-top: 1px solid var(--border);
   color: var(--accent);
-  font-size: 13px;
-  font-weight: 600;
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
   font-family: inherit;
 }
