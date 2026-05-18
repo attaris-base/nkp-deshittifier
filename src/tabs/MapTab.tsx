@@ -85,7 +85,20 @@ interface Props {
 
 export function MapTab({ onViewProfile }: Props) {
   const geo = useGeo()
-  const grid = useGrid(geo.lat ?? 0, geo.lng ?? 0)
+
+  // When user pans to a new location, we track the override coords so the grid
+  // fetches from that position instead of the GPS position on subsequent refreshes.
+  const [overrideLat, setOverrideLat] = useState<number | null>(null)
+  const [overrideLng, setOverrideLng] = useState<number | null>(null)
+  const [mapCenterChanged, setMapCenterChanged] = useState(false)
+  // Stores the latest map center from moveend without triggering re-renders on every pan
+  // biome-ignore lint/suspicious/noExplicitAny: Leaflet CDN global, no type defs installed
+  const pendingCenterRef = useRef<any>(null)
+
+  const gridLat = overrideLat ?? geo.lat ?? 0
+  const gridLng = overrideLng ?? geo.lng ?? 0
+  const grid = useGrid(gridLat, gridLng)
+
   // biome-ignore lint/suspicious/noExplicitAny: Leaflet CDN global, no type defs installed
   const mapRef = useRef<any>(null)
   const containerRef = useRef<HTMLDivElement>(null)
@@ -131,10 +144,24 @@ export function MapTab({ onViewProfile }: Props) {
           [snapLat, snapLng],
           14,
         )
+        // nkp-map-tiles applies a CSS filter to fade the basemap so user pins stand out
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
           attribution: '© <a href="https://openstreetmap.org">OSM</a> contributors',
           maxZoom: 19,
+          className: 'nkp-map-tiles',
         }).addTo(map)
+
+        // Show "Search here" when the user pans; skip the first moveend from setView
+        let initialMove = true
+        map.on('moveend', () => {
+          if (initialMove) {
+            initialMove = false
+            return
+          }
+          pendingCenterRef.current = map.getCenter()
+          setMapCenterChanged(true)
+        })
+
         mapRef.current = map
         setMapReady(true)
       })
@@ -189,7 +216,7 @@ export function MapTab({ onViewProfile }: Props) {
         btn?.addEventListener(
           'click',
           () => {
-            onViewProfile({ id: pig.id, lat: geo.lat ?? 0, lng: geo.lng ?? 0 })
+            onViewProfile({ id: pig.id, lat: gridLat, lng: gridLng })
             map.closePopup()
           },
           { once: true },
@@ -200,6 +227,18 @@ export function MapTab({ onViewProfile }: Props) {
       markersRef.current.push(marker)
     }
   }, [grid.pigs, mapReady])
+
+  const handleSearchHere = () => {
+    const center = pendingCenterRef.current
+    if (!center) return
+    const lat = center.lat as number
+    const lng = center.lng as number
+    setOverrideLat(lat)
+    setOverrideLng(lng)
+    setMapCenterChanged(false)
+    // searchAt synchronously updates the grid refs and triggers a fetch at the new location
+    grid.searchAt(lat, lng)
+  }
 
   if (geo.denied) {
     return (
@@ -236,7 +275,14 @@ export function MapTab({ onViewProfile }: Props) {
       </div>
       {(geo.loading || (grid.loading && !mapReady)) && <Spinner label="Finding nearby users…" />}
       {grid.error && !grid.loading && <ErrorBanner message={grid.error} onRetry={grid.refresh} />}
-      <div ref={containerRef} class="nkp-map-container" />
+      <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', flex: 1, minHeight: 0 }}>
+        {mapCenterChanged && (
+          <button type="button" class="nkp-map-search-here" onClick={handleSearchHere}>
+            Search here
+          </button>
+        )}
+        <div ref={containerRef} class="nkp-map-container" />
+      </div>
     </div>
   )
 }
