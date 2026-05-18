@@ -34,6 +34,13 @@
 - OINK first message: `sendOink(userID)` in `api.ts` already implemented; ProfileTab needs compose UI and post-send inbox refresh trigger
 - ProfileTab currently calls `useInbox()` redundantly — resolve during compose work (lift thread lookup to App or pass down)
 
+**Plans:** 3 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Inbox thread-list pagination (fetchMail cursor, useInbox loadMore, Load more button) [MSGS-01]
+- [ ] 01-02-PLAN.md — Inbox server-side search (typed searchMessages, debounced search bar, results render branch) [MSGS-02, MSGS-03]
+- [ ] 01-03-PLAN.md — OINK first contact + lifted useInbox (App owns inbox, ProfileTab OINK state machine, background inbox refresh) [MSGS-04, MSGS-05]
+
 ---
 
 ### Phase 2: Map Improvements
