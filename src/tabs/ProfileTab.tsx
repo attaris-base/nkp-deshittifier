@@ -1,11 +1,13 @@
+import { useState } from 'preact/hooks'
 import type { SelectedProfile } from '../App'
+import { searchMessages, sendOink } from '../api'
 import { Avatar } from '../components/Avatar'
 import { DopplerBadge } from '../components/DopplerBadge'
 import { ErrorBanner } from '../components/ErrorBanner'
 import { Spinner } from '../components/Spinner'
 import { useInbox } from '../hooks/useInbox'
 import { useProfile } from '../hooks/useProfile'
-import type { Photo } from '../types/api.types'
+import type { MessageSearch, Photo, Result } from '../types/api.types'
 
 interface Props {
   profile: SelectedProfile | null
@@ -15,6 +17,8 @@ interface Props {
 export function ProfileTab({ profile, onOpenThread }: Props) {
   const { data, loading, error, refresh } = useProfile(profile)
   const inbox = useInbox()
+  const [initiating, setInitiating] = useState(false)
+  const [initError, setInitError] = useState<string | null>(null)
 
   if (!profile) {
     return (
@@ -30,16 +34,33 @@ export function ProfileTab({ profile, onOpenThread }: Props) {
   if (error) return <ErrorBanner message={error} onRetry={refresh} />
   if (!data) return null
 
-  // Find existing thread for this user so Message button can open it
-  const existingThread = inbox.data?.threads.find((t) => t.sender_id === data.id)
+  // Find existing thread for this user so Message button can open it directly
+  const existingThread = inbox.threads.find((t) => t.sender_id === data.id)
 
-  function handleMessage() {
+  async function handleMessage() {
+    if (!data) return
     if (existingThread) {
       onOpenThread(existingThread.thread_id)
-    } else {
-      // No existing thread — navigate to Messages tab where compose will open
-      // with recipient pre-filled (thread_id "0" = new message)
-      onOpenThread(0)
+      return
+    }
+    // No existing thread — send an OINK to establish one, then search for it.
+    // The OINK message contains "OINK" so searchMessages('oink') will surface the thread.
+    setInitiating(true)
+    setInitError(null)
+    try {
+      const sent = await sendOink(String(data.id))
+      if (!sent) throw new Error('OINK could not be sent. Please try again.')
+
+      const res = (await searchMessages('oink')) as MessageSearch | null
+      const found: Result | undefined =
+        res?.results?.find((r: Result) => r.name === data.nick) ?? res?.results?.[0]
+
+      if (!found) throw new Error('Could not locate new conversation. Check your Messages tab.')
+      onOpenThread(found.id)
+    } catch (e) {
+      setInitError((e as Error).message)
+    } finally {
+      setInitiating(false)
     }
   }
 
@@ -112,12 +133,18 @@ export function ProfileTab({ profile, onOpenThread }: Props) {
       {/* Message button */}
       {!data.is_me && (
         <div class="nkp-msg-btn-wrap">
+          {initError && (
+            <div class="nkp-error" style={{ marginBottom: '10px' }}>
+              <span class="nkp-error-text">{initError}</span>
+            </div>
+          )}
           <button
             type="button"
             class="nkp-btn nkp-btn-primary nkp-btn-full"
             onClick={handleMessage}
+            disabled={initiating}
           >
-            ✉ Message {data.nick}
+            {initiating ? 'Contacting…' : `✉ Message ${data.nick}`}
           </button>
         </div>
       )}

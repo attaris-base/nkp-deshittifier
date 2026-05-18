@@ -88,9 +88,19 @@ export function useGrid(lat: number, lng: number) {
 
   const refresh = useCallback(() => load(filters), [load, filters])
 
+  // Fetch at an explicit location without waiting for a prop re-render to update the refs
+  const searchAt = useCallback(
+    (lat: number, lng: number) => {
+      latRef.current = lat
+      lngRef.current = lng
+      load(filters)
+    },
+    [load, filters],
+  )
+
   // All pigs across pages
   const pigs = state.pages.flatMap((p) => p.pigs)
   const hasMore = state.pages.length > 0 && state.pages[state.pages.length - 1].has_more
 
-  return { ...state, pigs, hasMore, filters, applyFilters, refresh, loadMore }
+  return { ...state, pigs, hasMore, filters, applyFilters, refresh, loadMore, searchAt }
 }

@@ -1,12 +1,13 @@
-import { useEffect, useRef, useState } from 'preact/hooks'
+import { useCallback, useEffect, useRef, useState } from 'preact/hooks'
 import type { SelectedProfile } from '../App'
+import { searchMessages } from '../api'
 import { Avatar } from '../components/Avatar'
 import { DopplerBadge } from '../components/DopplerBadge'
 import { ErrorBanner } from '../components/ErrorBanner'
 import { Spinner } from '../components/Spinner'
 import { useInbox } from '../hooks/useInbox'
 import { useThread } from '../hooks/useThread'
-import type { Message, Thread } from '../types/api.types'
+import type { Message, MessageSearch, Result, Thread } from '../types/api.types'
 
 interface Props {
   onViewProfile: (p: SelectedProfile) => void
@@ -33,11 +34,21 @@ function fmtDate(raw: Date | string): string {
 
 interface InboxProps {
   threads: Thread[]
+  hasMore: boolean
+  loadingMore: boolean
   onSelect: (t: Thread) => void
   onViewProfile: (senderId: number) => void
+  onLoadMore: () => void
 }
 
-function InboxView({ threads, onSelect, onViewProfile }: InboxProps) {
+function InboxView({
+  threads,
+  hasMore,
+  loadingMore,
+  onSelect,
+  onViewProfile,
+  onLoadMore,
+}: InboxProps) {
   if (threads.length === 0) {
     return (
       <div class="nkp-empty">
@@ -50,11 +61,19 @@ function InboxView({ threads, onSelect, onViewProfile }: InboxProps) {
 
   return (
     <div class="nkp-list">
-      {threads.map((t) => (
-        <div
-          key={t.thread_id}
-          class={`nkp-thread-row${t.unread > 0 ? ' unread' : ''}`}
+      {/* Load older threads above the current list — cursor-paginated */}
+      {hasMore && (
+        <button
+          type="button"
+          class="nkp-inbox-load-more"
+          onClick={onLoadMore}
+          disabled={loadingMore}
         >
+          {loadingMore ? 'Loading…' : '↑ Load older messages'}
+        </button>
+      )}
+      {threads.map((t) => (
+        <div key={t.thread_id} class={`nkp-thread-row${t.unread > 0 ? ' unread' : ''}`}>
           <button
             type="button"
             class="nkp-avatar-btn"
@@ -80,6 +99,60 @@ function InboxView({ threads, onSelect, onViewProfile }: InboxProps) {
             </div>
           </button>
         </div>
+      ))}
+    </div>
+  )
+}
+
+// ─── SearchView ───────────────────────────────────────────────────────────────
+
+interface SearchViewProps {
+  results: Result[]
+  loading: boolean
+  error: string | null
+  hasQuery: boolean
+  onSelect: (id: number) => void
+}
+
+function SearchView({ results, loading, error, hasQuery, onSelect }: SearchViewProps) {
+  if (!hasQuery) {
+    return (
+      <div class="nkp-empty">
+        <div class="nkp-empty-sub">Type to search your messages</div>
+      </div>
+    )
+  }
+  if (loading) return <Spinner label="Searching…" />
+  if (error) return <ErrorBanner message={error} />
+  if (results.length === 0) {
+    return (
+      <div class="nkp-empty">
+        <div class="nkp-empty-title">No results</div>
+        <div class="nkp-empty-sub">Try different search terms</div>
+      </div>
+    )
+  }
+  return (
+    <div class="nkp-list">
+      {results.map((r) => (
+        <button
+          key={r.id}
+          type="button"
+          class="nkp-thread-row nkp-thread-content"
+          onClick={() => onSelect(r.id)}
+        >
+          <Avatar src={r.photoPath} name={r.name} />
+          <div class="nkp-thread-body">
+            <div class="nkp-thread-sender">{r.name}</div>
+            <div class="nkp-thread-preview">
+              {r.subject ? `${r.subject} — ` : ''}
+              {r.preview}
+            </div>
+          </div>
+          <div class="nkp-thread-meta">
+            <span class="nkp-thread-time">{fmtDate(r.date)}</span>
+          </div>
+        </button>
       ))}
     </div>
   )
@@ -227,6 +300,12 @@ export function MessagesTab({
 }: Props) {
   const inbox = useInbox()
   const [activeThreadId, setActiveThreadId] = useState<number | null>(null)
+  const [searchMode, setSearchMode] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState<Result[] | null>(null)
+  const [searchLoading, setSearchLoading] = useState(false)
+  const [searchError, setSearchError] = useState<string | null>(null)
+  const debounceRef = useRef<number | null>(null)
 
   // Propagate unread count upward
   useEffect(() => {
@@ -234,16 +313,45 @@ export function MessagesTab({
   }, [inbox.unreadCount, onUnreadChange])
 
   // Open a specific thread if requested from Profile tab
-  // pendingThreadId === 0 means "new thread" (API parent_id TBD) — just open inbox for now
   useEffect(() => {
     if (pendingThreadId != null && pendingThreadId > 0) {
       setActiveThreadId(pendingThreadId)
       onThreadOpened()
     } else if (pendingThreadId === 0) {
-      // TODO: open new-message compose once API parent_id for new threads is confirmed
       onThreadOpened()
     }
   }, [pendingThreadId, onThreadOpened])
+
+  const runSearch = useCallback(async (q: string) => {
+    if (!q.trim()) {
+      setSearchResults(null)
+      setSearchError(null)
+      return
+    }
+    setSearchLoading(true)
+    setSearchError(null)
+    try {
+      const res = (await searchMessages(q)) as MessageSearch | null
+      setSearchResults(res?.results ?? [])
+    } catch (e) {
+      setSearchError((e as Error).message ?? 'Search failed')
+    } finally {
+      setSearchLoading(false)
+    }
+  }, [])
+
+  const handleSearchInput = (q: string) => {
+    setSearchQuery(q)
+    if (debounceRef.current !== null) clearTimeout(debounceRef.current)
+    debounceRef.current = setTimeout(() => runSearch(q), 400) as unknown as number
+  }
+
+  const closeSearch = () => {
+    setSearchMode(false)
+    setSearchQuery('')
+    setSearchResults(null)
+    setSearchError(null)
+  }
 
   if (inbox.error === 'not-logged-in') {
     return (
@@ -276,26 +384,74 @@ export function MessagesTab({
   return (
     <div>
       <div class="nkp-header">
-        <span class="nkp-header-title">Messages</span>
-        <button
-          type="button"
-          class="nkp-header-action"
-          onClick={inbox.refresh}
-          aria-label="Refresh inbox"
-        >
-          ↻
-        </button>
+        {searchMode ? (
+          <>
+            <button
+              type="button"
+              class="nkp-header-back"
+              onClick={closeSearch}
+              aria-label="Close search"
+            >
+              ×
+            </button>
+            <input
+              class="nkp-search-input"
+              type="search"
+              placeholder="Search messages…"
+              value={searchQuery}
+              // biome-ignore lint/a11y/noAutofocus: intentional — user tapped Search
+              autoFocus
+              onInput={(e) => handleSearchInput((e.target as HTMLInputElement).value)}
+            />
+          </>
+        ) : (
+          <>
+            <span class="nkp-header-title">Messages</span>
+            <button
+              type="button"
+              class="nkp-header-action"
+              onClick={() => setSearchMode(true)}
+              aria-label="Search messages"
+            >
+              Search
+            </button>
+            <button
+              type="button"
+              class="nkp-header-action"
+              onClick={inbox.refresh}
+              aria-label="Refresh inbox"
+            >
+              ↻
+            </button>
+          </>
+        )}
       </div>
-      {inbox.loading && <Spinner label="Loading messages…" />}
-      {inbox.error && !inbox.loading && (
-        <ErrorBanner message={inbox.error} onRetry={inbox.refresh} />
-      )}
-      {inbox.data && !inbox.loading && (
-        <InboxView
-          threads={inbox.data.threads}
-          onSelect={(t) => setActiveThreadId(t.thread_id)}
-          onViewProfile={(id) => onViewProfile({ id, lat: geoCache.lat, lng: geoCache.lng })}
+
+      {searchMode ? (
+        <SearchView
+          results={searchResults ?? []}
+          loading={searchLoading}
+          error={searchError}
+          hasQuery={Boolean(searchQuery.trim())}
+          onSelect={(id) => setActiveThreadId(id)}
         />
+      ) : (
+        <>
+          {inbox.loading && <Spinner label="Loading messages…" />}
+          {inbox.error && !inbox.loading && (
+            <ErrorBanner message={inbox.error} onRetry={inbox.refresh} />
+          )}
+          {!inbox.loading && (
+            <InboxView
+              threads={inbox.threads}
+              hasMore={inbox.hasMore}
+              loadingMore={inbox.loadingMore}
+              onSelect={(t) => setActiveThreadId(t.thread_id)}
+              onViewProfile={(id) => onViewProfile({ id, lat: geoCache.lat, lng: geoCache.lng })}
+              onLoadMore={inbox.loadMore}
+            />
+          )}
+        </>
       )}
     </div>
   )

@@ -228,18 +228,17 @@ export interface Photo {
   type: string
 }
 
-
 // message search response JSON:
 export interface MessageSearch {
-  results: Result[];
-  csrf:    string;
+  results: Result[]
+  csrf: string
 }
 
 export interface Result {
-  id:      number;
-  date:    Date;
-  name:    string;
-  photoPath:  string;
-  subject: string;
-  preview: string;
+  id: number
+  date: Date
+  name: string
+  photoPath: string
+  subject: string
+  preview: string
 }

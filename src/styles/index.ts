@@ -294,5 +294,34 @@ export const STYLES = `
 .nkp-map-leaflet-popup .leaflet-popup-tip{background:var(--bg-card)}
 .nkp-map-leaflet-popup .leaflet-popup-close-button{color:var(--text-muted)!important;right:8px!important;top:8px!important}
 .nkp-map-leaflet-popup .leaflet-popup-close-button:hover{color:var(--text)!important}
+
+/* Fade basemap tiles so user pins pop against the dark background */
+.nkp-map-tiles{filter:brightness(0.45) saturate(0.25) hue-rotate(220deg)}
+
+/* "Search here" floating button — shown when user pans the map */
+.nkp-map-search-here{
+  position:absolute;top:12px;left:50%;transform:translateX(-50%);z-index:1000;
+  background:var(--accent);color:#fff;border:none;border-radius:20px;
+  padding:8px 18px;font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;
+  box-shadow:0 2px 10px rgba(0,0,0,.5);white-space:nowrap;
+}
+.nkp-map-search-here:active{opacity:.85}
 /* ─────────────────────────────────────────────────────────────────────────── */
+
+/* Load older messages button — sits at the top of the inbox thread list */
+.nkp-inbox-load-more{
+  width:100%;padding:12px;
+  background:transparent;border:none;border-bottom:1px solid var(--border);
+  color:var(--accent);font-size:13px;font-weight:600;cursor:pointer;font-family:inherit;
+}
+.nkp-inbox-load-more:disabled{opacity:.5;cursor:default}
+
+/* Inline search input shown in the Messages header when search mode is active */
+.nkp-search-input{
+  flex:1;background:var(--bg-card);border:1px solid var(--border);border-radius:20px;
+  padding:6px 14px;color:var(--text);font-size:13px;font-family:inherit;
+  outline:none;min-width:0;
+}
+.nkp-search-input:focus{border-color:var(--accent)}
+.nkp-search-input::placeholder{color:var(--text-dim)}
 `

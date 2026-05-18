@@ -1,33 +1,80 @@
-import { useCallback, useEffect, useState } from 'preact/hooks'
+import { useCallback, useEffect, useRef, useState } from 'preact/hooks'
 import { fetchMail } from '../api'
-import type { CurrentMail } from '../types/api.types'
+import type { CurrentMail, Thread } from '../types/api.types'
 
 export interface InboxState {
-  data: CurrentMail | null
+  threads: Thread[]
+  cursor: string | null
+  hasMore: boolean
   loading: boolean
+  loadingMore: boolean
   /** 'not-logged-in' | error message string | null */
   error: string | null
 }
 
 export function useInbox() {
-  const [state, setState] = useState<InboxState>({ data: null, loading: true, error: null })
+  const [state, setState] = useState<InboxState>({
+    threads: [],
+    cursor: null,
+    hasMore: false,
+    loading: true,
+    loadingMore: false,
+    error: null,
+  })
+  // Stable ref so loadMore can read latest cursor without being in its dep array
+  const cursorRef = useRef<string | null>(null)
+  cursorRef.current = state.cursor
 
   const load = useCallback(async () => {
     setState((s) => ({ ...s, loading: true, error: null }))
     try {
       const json = await fetchMail()
-      // Detect logged-out state: API may return a non-object or missing threads
       if (
         typeof json !== 'object' ||
         json === null ||
         !Array.isArray((json as CurrentMail).threads)
       ) {
-        setState({ data: null, loading: false, error: 'not-logged-in' })
+        setState((s) => ({ ...s, threads: [], loading: false, error: 'not-logged-in' }))
         return
       }
-      setState({ data: json as CurrentMail, loading: false, error: null })
+      const data = json as CurrentMail
+      setState({
+        threads: data.threads,
+        cursor: data.next_cursor || null,
+        hasMore: Boolean(data.next_cursor),
+        loading: false,
+        loadingMore: false,
+        error: null,
+      })
     } catch (e) {
-      setState({ data: null, loading: false, error: (e as Error).message ?? 'Network error' })
+      setState((s) => ({ ...s, loading: false, error: (e as Error).message ?? 'Network error' }))
+    }
+  }, [])
+
+  const loadMore = useCallback(async () => {
+    const cursor = cursorRef.current
+    if (!cursor) return
+    setState((s) => ({ ...s, loadingMore: true }))
+    try {
+      const json = await fetchMail(cursor)
+      if (
+        typeof json !== 'object' ||
+        json === null ||
+        !Array.isArray((json as CurrentMail).threads)
+      ) {
+        setState((s) => ({ ...s, loadingMore: false }))
+        return
+      }
+      const data = json as CurrentMail
+      setState((s) => ({
+        ...s,
+        threads: [...s.threads, ...data.threads],
+        cursor: data.next_cursor || null,
+        hasMore: Boolean(data.next_cursor),
+        loadingMore: false,
+      }))
+    } catch {
+      setState((s) => ({ ...s, loadingMore: false }))
     }
   }, [])
 
@@ -44,7 +91,7 @@ export function useInbox() {
     return () => document.removeEventListener('visibilitychange', onFocus)
   }, [load])
 
-  const unreadCount = state.data?.threads.reduce((n, t) => n + (t.unread ?? 0), 0) ?? 0
+  const unreadCount = state.threads.reduce((n, t) => n + (t.unread ?? 0), 0)
 
-  return { ...state, refresh: load, unreadCount }
+  return { ...state, refresh: load, loadMore, unreadCount }
 }
