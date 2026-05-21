@@ -269,6 +269,11 @@ export const STYLES = `
   background:var(--bg-card);box-shadow:0 2px 8px rgba(0,0,0,.5);cursor:pointer;
 }
 .nkp-map-pin-img{width:100%;height:100%;object-fit:cover;display:block}
+.nkp-map-pin--discover{
+  width:24px;height:24px;border-radius:50%;
+  background:var(--accent-2);border:3px solid var(--accent);
+  box-shadow:0 0 10px var(--accent);cursor:pointer;
+}
 .nkp-map-pin--init{
   display:flex;align-items:center;justify-content:center;
   font-size:16px;font-weight:700;color:var(--accent);

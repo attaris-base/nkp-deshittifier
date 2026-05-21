@@ -76,7 +76,7 @@ export function App() {
           <ProfileTab profile={selectedProfile} onOpenThread={handleOpenThread} />
         )}
         {/* ── MAP FEATURE render (remove to disable) ── */}
-        <div style={{ display: activeTab === 'map' ? '' : 'none' }}>
+        <div style={{ display: activeTab === 'map' ? '' : 'none', height: '100%' }}>
           <MapTab
             grid={grid}
             geo={geo}

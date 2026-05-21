@@ -154,10 +154,11 @@ export function MapTab({ grid, geo, isActive, onViewProfile, onSearchAt }: Props
     el.style.paddingBottom = isActive ? '0' : ''
   }, [isActive])
 
-  // After display:none → visible, Leaflet must recalculate tile layout
+  // After display:none → visible (or after first init), Leaflet must recalculate tile layout
   useEffect(() => {
-    if (isActive && mapRef.current) mapRef.current.invalidateSize()
-  }, [isActive])
+    if (!isActive || !mapRef.current) return
+    requestAnimationFrame(() => mapRef.current?.invalidateSize())
+  }, [isActive, mapReady])
 
   // Initialize once — guarded by mapRef.current so GPS drift doesn't destroy/recreate the map
   useEffect(() => {
