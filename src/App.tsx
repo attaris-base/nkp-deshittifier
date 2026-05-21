@@ -1,11 +1,13 @@
-import { useState } from 'preact/hooks'
+import { useEffect, useState } from 'preact/hooks'
 import { TabBar } from './components/TabBar'
+// ─────────────────────────────────────────────────────────────────────────────
+import { useGeo } from './hooks/useGeo'
+import { useGrid } from './hooks/useGrid'
 // ── MAP FEATURE import (remove to disable) ───────────────────────────────────
 import { MapTab } from './tabs/MapTab'
 import { MessagesTab } from './tabs/MessagesTab'
 import { NearbyTab } from './tabs/NearbyTab'
 import { ProfileTab } from './tabs/ProfileTab'
-// ─────────────────────────────────────────────────────────────────────────────
 
 export type TabId = 'messages' | 'nearby' | 'profile' | 'map'
 
@@ -18,10 +20,23 @@ export interface SelectedProfile {
 export function App() {
   const [activeTab, setActiveTab] = useState<TabId>('messages')
   const [selectedProfile, setSelectedProfile] = useState<SelectedProfile | null>(null)
-  /** thread_id to open when switching to Messages — set by Profile "Message" button */
   const [pendingThreadId, setPendingThreadId] = useState<number | null>(null)
-  /** Unread count badge on Messages tab — updated by MessagesTab */
   const [unreadCount, setUnreadCount] = useState(0)
+  const [overrideLat, _setOverrideLat] = useState<number | null>(null)
+  const [overrideLng, _setOverrideLng] = useState<number | null>(null)
+
+  const geo = useGeo()
+  const gridLat = overrideLat ?? geo.lat ?? 0
+  const gridLng = overrideLng ?? geo.lng ?? 0
+  const grid = useGrid(gridLat, gridLng)
+
+  useEffect(() => {
+    geo.request()
+  }, [])
+
+  useEffect(() => {
+    if (geo.lat != null && geo.lng != null && !geo.loading) grid.refresh()
+  }, [geo.lat, geo.lng, geo.loading])
 
   function handleViewProfile(profile: SelectedProfile) {
     setSelectedProfile(profile)
@@ -48,7 +63,9 @@ export function App() {
             onUnreadChange={setUnreadCount}
           />
         )}
-        {activeTab === 'nearby' && <NearbyTab onViewProfile={handleViewProfile} />}
+        {activeTab === 'nearby' && (
+          <NearbyTab grid={grid} geo={geo} onViewProfile={handleViewProfile} />
+        )}
         {activeTab === 'profile' && (
           <ProfileTab profile={selectedProfile} onOpenThread={handleOpenThread} />
         )}

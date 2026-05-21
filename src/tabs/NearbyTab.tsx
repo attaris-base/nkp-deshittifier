@@ -1,14 +1,15 @@
-import { useEffect } from 'preact/hooks'
 import type { SelectedProfile } from '../App'
 import { Avatar } from '../components/Avatar'
 import { DopplerBadge } from '../components/DopplerBadge'
 import { ErrorBanner } from '../components/ErrorBanner'
 import { Spinner } from '../components/Spinner'
-import { useGeo } from '../hooks/useGeo'
-import { useGrid } from '../hooks/useGrid'
+import type { GeoReturn } from '../hooks/useGeo'
+import type { GridReturn } from '../hooks/useGrid'
 import type { Heat, Pig } from '../types/api.types'
 
 interface Props {
+  grid: GridReturn
+  geo: GeoReturn
   onViewProfile: (p: SelectedProfile) => void
 }
 
@@ -52,21 +53,7 @@ function UserCard({ pig, onSelect }: { pig: Pig; onSelect: () => void }) {
   )
 }
 
-export function NearbyTab({ onViewProfile }: Props) {
-  const geo = useGeo()
-  const grid = useGrid(geo.lat ?? 0, geo.lng ?? 0)
-
-  // Request location on mount, then load grid once we have coords
-  useEffect(() => {
-    geo.request()
-  }, [])
-  useEffect(() => {
-    if (geo.lat != null && geo.lng != null && !geo.loading) {
-      grid.refresh()
-    }
-  }, [geo.lat, geo.lng, geo.loading])
-
-  // Location denied state
+export function NearbyTab({ grid, geo, onViewProfile }: Props) {
   if (geo.denied) {
     return (
       <div>
@@ -101,7 +88,6 @@ export function NearbyTab({ onViewProfile }: Props) {
         </button>
       </div>
 
-      {/* Filter bar */}
       <div class="nkp-filters">
         <select
           class="nkp-filter-select"
