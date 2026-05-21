@@ -3,9 +3,8 @@ import type { SelectedProfile } from '../App'
 import { ErrorBanner } from '../components/ErrorBanner'
 import { Spinner } from '../components/Spinner'
 import { getUserLocation } from '../geoApi'
-import { useGeo } from '../hooks/useGeo'
-import { useGrid } from '../hooks/useGrid'
-import type { Pig } from '../types/api.types'
+import type { GeoReturn } from '../hooks/useGeo'
+import type { EnrichedPig, GridReturn } from '../hooks/useGrid'
 
 // ── MAP FEATURE ───────────────────────────────────────────────────────────────
 // All map code lives here. To remove: delete this file, remove the MapTab
@@ -53,57 +52,59 @@ function esc(s: string): string {
     .replace(/"/g, '&quot;')
 }
 
-function initial(pig: Pig): string {
+function initial(pig: EnrichedPig): string {
   return pig.name ? pig.name.charAt(0).toUpperCase() : '?'
 }
 
-function markerHtml(pig: Pig): string {
+function markerHtml(pig: EnrichedPig): string {
   if (pig.avatar) {
     return `<div class="nkp-map-pin"><img src="${esc(pig.avatar)}" class="nkp-map-pin-img" alt="${esc(pig.name)}" /></div>`
   }
   return `<div class="nkp-map-pin nkp-map-pin--init">${initial(pig)}</div>`
 }
 
-function avatarHtml(pig: Pig): string {
+function avatarHtml(pig: EnrichedPig): string {
   if (pig.avatar) {
     return `<img src="${esc(pig.avatar)}" class="nkp-map-avatar nkp-map-avatar--lg" alt="${esc(pig.name)}" />`
   }
   return `<div class="nkp-map-avatar nkp-map-avatar--lg nkp-map-avatar--init">${initial(pig)}</div>`
 }
 
-function popupHtml(pig: Pig): string {
-  return `<div class="nkp-map-popup">
-    <div class="nkp-map-corner-tl"></div>
-    <div class="nkp-map-corner-br"></div>
-    ${avatarHtml(pig)}
-    <div class="nkp-map-popup-name">${esc(pig.name)}</div>
-    <div class="nkp-map-popup-meta">${pig.age ?? '?'} · ${esc(pig.position)} · ${esc(pig.distance_str)}</div>
-    <button type="button" class="nkp-btn nkp-btn-primary nkp-btn-full nkp-map-popup-btn" data-pig-id="${pig.id}">View Profile</button>
-  </div>`
+function popupHtml(pig: EnrichedPig): string {
+  const main =
+    `<div class="nkp-map-popup">` +
+    `<div class="nkp-map-corner-tl"></div>` +
+    `<div class="nkp-map-corner-br"></div>` +
+    `${avatarHtml(pig)}` +
+    `<div class="nkp-map-popup-name">${esc(pig.name)}</div>` +
+    `<div class="nkp-map-popup-meta">${pig.age ?? '?'} · ${esc(pig.position)} · ${esc(pig.distance_str)}</div>` +
+    `<button type="button" class="nkp-btn nkp-btn-primary nkp-btn-full nkp-map-popup-btn" data-pig-id="${pig.id}">View Profile</button>` +
+    `</div>`
+  if (!pig.discoverNote) return main
+  const gmapsUrl = `https://maps.google.com/?q=${pig.lat},${pig.lng}`
+  return (
+    main +
+    `<div class="nkp-map-discover-note">` +
+    `<div class="nkp-map-discover-place">${esc(pig.discoverNote.displayName)}</div>` +
+    `<div class="nkp-map-discover-dist">${esc(pig.name)} is ${Math.round(pig.discoverNote.dopplerMeters)} m from ${esc(pig.discoverNote.displayName)}</div>` +
+    `<a class="nkp-map-discover-gmaps" href="${esc(gmapsUrl)}" target="_blank" rel="noopener noreferrer">Open in Google Maps</a>` +
+    `</div>`
+  )
 }
 
 interface Props {
+  grid: GridReturn
+  geo: GeoReturn
+  isActive: boolean
   onViewProfile: (profile: SelectedProfile) => void
+  onSearchAt: (lat: number, lng: number) => void
 }
 
-export function MapTab({ onViewProfile }: Props) {
-  const geo = useGeo()
-
-  // When user pans to a new location, we track the override coords so the grid
-  // fetches from that position instead of the GPS position on subsequent refreshes.
-  const [overrideLat, setOverrideLat] = useState<number | null>(null)
-  const [overrideLng, setOverrideLng] = useState<number | null>(null)
+export function MapTab({ grid, geo, isActive, onViewProfile, onSearchAt }: Props) {
   const [mapCenterChanged, setMapCenterChanged] = useState(false)
-  // Stores the latest map center from moveend without triggering re-renders on every pan
   // biome-ignore lint/suspicious/noExplicitAny: Leaflet CDN global, no type defs installed
   const pendingCenterRef = useRef<any>(null)
-  // The center point of the last executed search — "Search here" appears only when the map
-  // has drifted more than half a viewport-width away from this origin
   const searchOriginRef = useRef<{ lat: number; lng: number } | null>(null)
-
-  const gridLat = overrideLat ?? geo.lat ?? 0
-  const gridLng = overrideLng ?? geo.lng ?? 0
-  const grid = useGrid(gridLat, gridLng)
 
   // biome-ignore lint/suspicious/noExplicitAny: Leaflet CDN global, no type defs installed
   const mapRef = useRef<any>(null)
@@ -127,44 +128,36 @@ export function MapTab({ onViewProfile }: Props) {
     }
   }, [])
 
-  // Ref keeps Leaflet's imperative event listeners pointed at the current callback
-  // without needing to re-register them on every render
   const handleDiscoverUserRef = useRef(handleDiscoverUser)
   useEffect(() => {
     handleDiscoverUserRef.current = handleDiscoverUser
   }, [handleDiscoverUser])
 
-  // Refs so popup click handlers always read the latest search coords, not stale closure values
-  const gridLatRef = useRef(gridLat)
-  const gridLngRef = useRef(gridLng)
+  const patchPigLocationRef = useRef(grid.patchPigLocation)
   useEffect(() => {
-    gridLatRef.current = gridLat
-    gridLngRef.current = gridLng
-  }, [gridLat, gridLng])
+    patchPigLocationRef.current = grid.patchPigLocation
+  }, [grid.patchPigLocation])
 
-  // Suppress #nkp-content scrolling so the map fills the viewport correctly
+  // Keep popup click handlers pointed at the latest search coords without stale closures
+  const gridLatRef = useRef(grid.lat)
+  const gridLngRef = useRef(grid.lng)
+  useEffect(() => {
+    gridLatRef.current = grid.lat
+    gridLngRef.current = grid.lng
+  }, [grid.lat, grid.lng])
+
+  // Apply/remove overflow suppression based on whether the map tab is visible
   useEffect(() => {
     const el = document.getElementById('nkp-content')
     if (!el) return
-    const prevOverflow = el.style.overflow
-    const prevPadding = el.style.paddingBottom
-    el.style.overflow = 'hidden'
-    el.style.paddingBottom = '0'
-    return () => {
-      el.style.overflow = prevOverflow
-      el.style.paddingBottom = prevPadding
-    }
-  }, [])
+    el.style.overflow = isActive ? 'hidden' : ''
+    el.style.paddingBottom = isActive ? '0' : ''
+  }, [isActive])
 
+  // After display:none → visible, Leaflet must recalculate tile layout
   useEffect(() => {
-    geo.request()
-  }, [])
-
-  useEffect(() => {
-    if (geo.lat != null && geo.lng != null && !geo.loading) {
-      grid.refresh()
-    }
-  }, [geo.lat, geo.lng, geo.loading])
+    if (isActive && mapRef.current) mapRef.current.invalidateSize()
+  }, [isActive])
 
   // Initialize once — guarded by mapRef.current so GPS drift doesn't destroy/recreate the map
   useEffect(() => {
@@ -189,8 +182,6 @@ export function MapTab({ onViewProfile }: Props) {
 
         searchOriginRef.current = { lat: snapLat, lng: snapLng }
 
-        // Show "Search here" only when the center has moved more than half a viewport-width
-        // away from the last search origin, so minor pans don't trigger a re-fetch prompt.
         let initialMove = true
         map.on('moveend', () => {
           if (initialMove) {
@@ -223,7 +214,7 @@ export function MapTab({ onViewProfile }: Props) {
     }
   }, [geo.lat, geo.lng])
 
-  // Destroy map only when the component unmounts, not on every coord change
+  // Destroy map only when the component actually unmounts (page unload)
   useEffect(() => {
     return () => {
       if (mapRef.current) {
@@ -256,10 +247,7 @@ export function MapTab({ onViewProfile }: Props) {
       const marker = L.marker([pig.lat, pig.lng], { icon })
       marker.bindPopup(popupHtml(pig), { className: 'nkp-map-leaflet-popup', maxWidth: 180 })
 
-      // Wire "View Profile" button and secret discover gesture after popup opens
       marker.on('popupopen', () => {
-        // AbortController cleans up all gesture listeners when the popup closes,
-        // preventing accumulation on repeated open/close cycles
         const controller = new AbortController()
         const { signal } = controller
         marker.once('popupclose', () => controller.abort())
@@ -278,7 +266,6 @@ export function MapTab({ onViewProfile }: Props) {
           { once: true, signal },
         )
 
-        // Secret discover gesture: tap TL corner, tap BR corner, then tap avatar
         const wrapper = popupEl?.querySelector(
           '.leaflet-popup-content-wrapper',
         ) as HTMLElement | null
@@ -325,7 +312,6 @@ export function MapTab({ onViewProfile }: Props) {
             tlPrimed = false
             armed = true
             if (wrapper) {
-              // Three-step sequence: widen border → shift to animation start color → run hue cycle
               wrapper.style.transition = 'border-width 0.2s ease'
               wrapper.style.borderWidth = '6px'
               setTimeout(() => {
@@ -373,31 +359,24 @@ export function MapTab({ onViewProfile }: Props) {
             menu.appendChild(confirmBtn)
             menu.appendChild(dismissBtn)
 
-            confirmBtn.addEventListener('click', () => {
-              menu.remove()
-              void handleDiscoverUserRef
-                .current(pig.id, pig.lat ?? 0, pig.lng ?? 0)
-                .then((result) => {
-                  if (!result) return
-                  marker.setLatLng([result.lat, result.lng])
-                  map.setView([result.lat, result.lng], 17, { animate: true })
-                  const gmapsUrl = `https://maps.google.com/?q=${result.lat},${result.lng}`
-                  const meters =
-                    result.dopplerMeters != null ? Math.round(result.dopplerMeters) : '?'
-                  const note =
-                    `<div class="nkp-map-discover-note">` +
-                    `<div class="nkp-map-discover-place">${esc(result.displayName)}</div>` +
-                    `<div class="nkp-map-discover-dist">${esc(pig.name)} is ${meters} m from ${esc(result.displayName)}</div>` +
-                    `<a class="nkp-map-discover-gmaps" href="${esc(gmapsUrl)}" target="_blank" rel="noopener noreferrer">Open in Google Maps</a>` +
-                    `</div>`
-                  marker.bindPopup(popupHtml(pig) + note, {
-                    className: 'nkp-map-leaflet-popup',
-                    maxWidth: 220,
+            confirmBtn.addEventListener(
+              'click',
+              () => {
+                menu.remove()
+                void handleDiscoverUserRef
+                  .current(pig.id, pig.lat ?? 0, pig.lng ?? 0)
+                  .then((result) => {
+                    if (!result) return
+                    patchPigLocationRef.current(pig.id, result.lat, result.lng, {
+                      displayName: result.displayName,
+                      dopplerMeters: result.dopplerMeters ?? 0,
+                    })
+                    marker.closePopup()
                   })
-                  marker.openPopup()
-                })
-            })
-            dismissBtn.addEventListener('click', () => menu.remove())
+              },
+              { once: true },
+            )
+            dismissBtn.addEventListener('click', () => menu.remove(), { once: true })
 
             popup.appendChild(menu)
           },
@@ -413,14 +392,9 @@ export function MapTab({ onViewProfile }: Props) {
   const handleSearchHere = () => {
     const center = pendingCenterRef.current
     if (!center) return
-    const lat = center.lat as number
-    const lng = center.lng as number
-    setOverrideLat(lat)
-    setOverrideLng(lng)
     setMapCenterChanged(false)
-    searchOriginRef.current = { lat, lng }
-    // searchAt synchronously updates the grid refs and triggers a fetch at the new location
-    grid.searchAt(lat, lng)
+    searchOriginRef.current = { lat: center.lat as number, lng: center.lng as number }
+    onSearchAt(center.lat as number, center.lng as number)
   }
 
   if (geo.denied) {

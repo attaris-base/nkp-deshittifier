@@ -22,8 +22,8 @@ export function App() {
   const [selectedProfile, setSelectedProfile] = useState<SelectedProfile | null>(null)
   const [pendingThreadId, setPendingThreadId] = useState<number | null>(null)
   const [unreadCount, setUnreadCount] = useState(0)
-  const [overrideLat, _setOverrideLat] = useState<number | null>(null)
-  const [overrideLng, _setOverrideLng] = useState<number | null>(null)
+  const [overrideLat, setOverrideLat] = useState<number | null>(null)
+  const [overrideLng, setOverrideLng] = useState<number | null>(null)
 
   const geo = useGeo()
   const gridLat = overrideLat ?? geo.lat ?? 0
@@ -52,6 +52,12 @@ export function App() {
     setPendingThreadId(null)
   }
 
+  function handleSearchAt(lat: number, lng: number) {
+    setOverrideLat(lat)
+    setOverrideLng(lng)
+    grid.searchAt(lat, lng)
+  }
+
   return (
     <div id="nkp-app">
       <div id="nkp-content">
@@ -70,7 +76,15 @@ export function App() {
           <ProfileTab profile={selectedProfile} onOpenThread={handleOpenThread} />
         )}
         {/* ── MAP FEATURE render (remove to disable) ── */}
-        {activeTab === 'map' && <MapTab onViewProfile={handleViewProfile} />}
+        <div style={{ display: activeTab === 'map' ? '' : 'none' }}>
+          <MapTab
+            grid={grid}
+            geo={geo}
+            isActive={activeTab === 'map'}
+            onViewProfile={handleViewProfile}
+            onSearchAt={handleSearchAt}
+          />
+        </div>
         {/* ─────────────────────────────────────────── */}
       </div>
       <TabBar active={activeTab} onChange={setActiveTab} unreadCount={unreadCount} />
