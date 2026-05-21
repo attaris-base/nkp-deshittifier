@@ -92,6 +92,8 @@ Vite extracts CSS into a separate `.css` file in lib/IIFE mode. A bookmarklet ca
 | `src/tabs/MessagesTab.tsx` | InboxView + ThreadView sub-components, compose bar |
 | `src/tabs/NearbyTab.tsx` | Filter bar, user cards with heat badges, load-more |
 | `src/tabs/ProfileTab.tsx` | Profile detail, photo gallery, Message button |
+| `src/tabs/MapTab.tsx` | Leaflet map (dynamically injected), pan-to-search, secret discover gesture |
+| `src/geoApi.ts` | Trilateration helpers, reverse geocoding, haversine distance — used by the discover gesture |
 | `src/components/` | TabBar, Avatar, DopplerBadge, Spinner, ErrorBanner |
 | `install/index.html` | Standalone GitHub Pages install page (no Vite, no framework). Detects mobile vs desktop and shows appropriate install flow. |
 | `scripts/gen-bookmarklet.mjs` | Prints bookmarklet URL to terminal (`--dev` for localhost) |
