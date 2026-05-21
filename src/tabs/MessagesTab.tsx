@@ -7,7 +7,7 @@ import { ErrorBanner } from '../components/ErrorBanner'
 import { Spinner } from '../components/Spinner'
 import { useInbox } from '../hooks/useInbox'
 import { useThread } from '../hooks/useThread'
-import type { Message, MessageSearch, Result, Thread } from '../types/api.types'
+import type { Message, MessageSearch, MessageSearchResult, Thread } from '../types/api.types'
 
 interface Props {
   onViewProfile: (p: SelectedProfile) => void
@@ -107,7 +107,7 @@ function InboxView({
 // ─── SearchView ───────────────────────────────────────────────────────────────
 
 interface SearchViewProps {
-  results: Result[]
+  results: MessageSearchResult[]
   loading: boolean
   error: string | null
   hasQuery: boolean
@@ -302,7 +302,7 @@ export function MessagesTab({
   const [activeThreadId, setActiveThreadId] = useState<number | null>(null)
   const [searchMode, setSearchMode] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
-  const [searchResults, setSearchResults] = useState<Result[] | null>(null)
+  const [searchResults, setSearchResults] = useState<MessageSearchResult[] | null>(null)
   const [searchLoading, setSearchLoading] = useState(false)
   const [searchError, setSearchError] = useState<string | null>(null)
   const debounceRef = useRef<number | null>(null)
