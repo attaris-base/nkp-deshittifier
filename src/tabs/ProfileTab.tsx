@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks'
+import { useEffect, useState } from 'preact/hooks'
 import type { SelectedProfile } from '../App'
 import { searchMessages, sendOink } from '../api'
 import { Avatar } from '../components/Avatar'
@@ -21,6 +21,10 @@ export function ProfileTab({ profile, onOpenThread }: Props) {
   const [initiating, setInitiating] = useState(false)
   const [initError, setInitError] = useState<string | null>(null)
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
+
+  useEffect(() => {
+    setLightboxIndex(null)
+  }, [profile?.id])
 
   if (!profile) {
     return (
