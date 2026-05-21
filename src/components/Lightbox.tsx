@@ -23,6 +23,7 @@ export function Lightbox({ photos, initialIndex, onClose }: Props) {
     scaleAtPinchStart: 1,
     startX: 0,
     startY: 0,
+    navigating: false,
   })
 
   function applyTransform(tx: number, sc: number, ox: number, oy: number, animated = false) {
@@ -38,12 +39,14 @@ export function Lightbox({ photos, initialIndex, onClose }: Props) {
       applyTransform(0, 1, g.current.offsetX, g.current.offsetY, true)
       return
     }
+    g.current.navigating = true
     applyTransform(dir === 1 ? -window.innerWidth : window.innerWidth, 1, 0, 0, true)
     setTimeout(() => {
       g.current.scale = 1
       g.current.offsetX = 0
       g.current.offsetY = 0
       g.current.dragX = 0
+      g.current.navigating = false
       setIndex(next)
       const img = imgRef.current
       if (img) {
@@ -93,7 +96,7 @@ export function Lightbox({ photos, initialIndex, onClose }: Props) {
 
     if (ptrs.current.size === 0) {
       if (type === 'swipe') {
-        if (Math.abs(dragX) > 60) {
+        if (!g.current.navigating && Math.abs(dragX) > 60) {
           commitAdvance(dragX < 0 ? 1 : -1)
         } else {
           applyTransform(0, 1, 0, 0, true)
@@ -131,6 +134,11 @@ export function Lightbox({ photos, initialIndex, onClose }: Props) {
     if (ptrs.current.size === 0) {
       g.current.type = 'none'
       applyTransform(0, g.current.scale, g.current.offsetX, g.current.offsetY, true)
+    } else if (ptrs.current.size === 1) {
+      const remaining = [...ptrs.current.values()][0]
+      g.current.startX = remaining.x
+      g.current.startY = remaining.y
+      g.current.type = g.current.scale > 1 ? 'pan' : 'swipe'
     }
   }
 
@@ -140,6 +148,7 @@ export function Lightbox({ photos, initialIndex, onClose }: Props) {
         onClose()
         return
       }
+      if (g.current.navigating) return
       if (e.key === 'ArrowLeft' && index > 0) commitAdvance(-1)
       if (e.key === 'ArrowRight' && index < photos.length - 1) commitAdvance(1)
     }

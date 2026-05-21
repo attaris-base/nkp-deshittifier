@@ -158,6 +158,7 @@ export function ProfileTab({ profile, onOpenThread }: Props) {
       )}
       {lightboxIndex !== null && (
         <Lightbox
+          key={lightboxIndex}
           photos={data.photos}
           initialIndex={lightboxIndex}
           onClose={() => setLightboxIndex(null)}
