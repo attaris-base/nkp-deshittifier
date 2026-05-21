@@ -12,7 +12,7 @@ When a coding task is complete, do the following:
 
 4. **Bundle size**: Keep bundle under 50 KB gzipped. Check with `npm run build` output.
 
-5. **No tests or linting** to run — the project has no test suite or linter configured.
+5. **Linting**: Run `npm run check` (Biome) — formats and lints in one pass, writes all safe fixes. No test suite configured.
 
 6. **Dev preview** (for UI changes): Run `npm run dev` + `npm run preview` and test via bookmarklet on the actual site.
 

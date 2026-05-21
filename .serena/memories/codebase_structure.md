@@ -17,6 +17,8 @@ src/
     MessagesTab.tsx     InboxView + ThreadView, compose bar
     NearbyTab.tsx       Filter bar, user cards with heat badges, load-more
     ProfileTab.tsx      Profile detail, photo gallery, Message button
+    MapTab.tsx          Leaflet map (dynamically injected), pan-to-search, discover gesture
+  geoApi.ts             Trilateration helpers (circleIntersections, trilaterationStep, getUserLocation, reverseGeocode, haversineDistanceMeters)
   components/
     TabBar.tsx
     Avatar.tsx

@@ -11,7 +11,8 @@ Hosted on GitHub Pages. Bundle is a single IIFE JS file loaded by the bookmarkle
 - **Preact 10.x** — lightweight React-compatible UI library
 - **Vite 6.x** with `@preact/preset-vite` — build tooling, IIFE lib mode
 - **TypeScript 5.8** — strict mode, ES2020 target, ESNext modules
-- No testing framework, no linting/formatting config
+- No testing framework
+- **Biome 2.x** (`@biomejs/biome`) for linting + formatting — config in `biome.json`
 
 ## Path Aliases (tsconfig.json)
 - `@api` → `./src/api.ts`
