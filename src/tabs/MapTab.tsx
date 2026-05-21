@@ -85,8 +85,7 @@ function popupHtml(pig: EnrichedPig): string {
   return (
     main +
     `<div class="nkp-map-discover-note">` +
-    `<div class="nkp-map-discover-place">${esc(pig.discoverNote.displayName)}</div>` +
-    `<div class="nkp-map-discover-dist">${esc(pig.name)} is ${Math.round(pig.discoverNote.dopplerMeters)} m from ${esc(pig.discoverNote.displayName)}</div>` +
+    `<div class="nkp-map-discover-dist">${esc(pig.name)} is ${Math.round(pig.discoverNote.dopplerMeters)} meters from ${esc(pig.discoverNote.displayName)}</div>` +
     `<a class="nkp-map-discover-gmaps" href="${esc(gmapsUrl)}" target="_blank" rel="noopener noreferrer">Open in Google Maps</a>` +
     `</div>`
   )

@@ -12,7 +12,11 @@ export function DopplerBadge({ doppler, distance }: Props) {
     <span class="nkp-doppler" style={{ color: doppler.hue_oklch }}>
       <span class="nkp-doppler-dot" style={{ background: doppler.hue_oklch }} />
       {doppler.term}
-      {distance ? ` · ${distance}` : doppler.numeric ? ` · ${doppler.numeric}` : ''}
+      {distance
+        ? ` · ${distance}`
+        : doppler.meters_raw
+          ? ` · ${(doppler.meters_raw / 1609.344).toFixed(1)} mi`
+          : ''}
     </span>
   )
 }
