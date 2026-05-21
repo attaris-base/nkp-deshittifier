@@ -213,16 +213,6 @@ export interface Profile {
   pulse: null
 }
 
-// export interface Doppler {
-//     band:        number;
-//     term:        string;
-//     hue_oklch:   string;
-//     p:           number;
-//     numeric:     string;
-//     meters_raw:  number;
-//     age_sec_raw: number;
-// }
-
 export interface Photo {
   url: string
   type: string
@@ -230,15 +220,104 @@ export interface Photo {
 
 // message search response JSON:
 export interface MessageSearch {
-  results: Result[]
+  results: MessageSearchResult[]
   csrf: string
 }
 
-export interface Result {
+export interface MessageSearchResult {
   id: number
   date: Date
   name: string
   photoPath: string
   subject: string
   preview: string
+}
+
+// Nominatum reverse-geocode response:
+
+export interface NominatimResponse {
+  place_id?: number
+  licence?: string
+  osm_type?: OsmType
+  osm_id?: number
+  lat?: string
+  lon?: string
+  class?: NominatimClass
+  type?: string
+  place_rank?: number
+  importance?: number
+  addresstype?: string
+  name?: string
+  display_name?: string
+  address?: NominatimAddress
+  boundingbox?: string[]
+  error?: Error
+}
+
+export interface NominatimAddress {
+  road?: string
+  village?: string
+  county?: string
+  state?: string
+  'ISO3166-2-lvl4'?: string
+  country?: string
+  country_code?: string
+  postcode?: string
+  house_number?: string
+  hamlet?: string
+  municipality?: string
+  town?: string
+  city?: string
+  neighbourhood?: string
+  city_district?: string
+  residential?: string
+  building?: string
+  amenity?: string
+  man_made?: string
+  locality?: string
+}
+
+export enum NominatimClass {
+  Amenity = 'amenity',
+  Boundary = 'boundary',
+  Building = 'building',
+  Highway = 'highway',
+  Information = 'information',
+  ManMade = 'man_made',
+  Place = 'place',
+}
+
+export enum OsmType {
+  Node = 'node',
+  Relation = 'relation',
+  Way = 'way',
+}
+
+// Response JSON to Pigs request:
+export interface PigsResponse {
+  ok: boolean
+  pigs: PigsResponsePig[]
+  me: PigsResponsePig
+  radius: number
+  ts: number
+}
+
+export interface PigsResponsePig {
+  id: number
+  name: string
+  thumb: null | string
+  lat: number
+  lng: number
+  distance_m: number
+  last_seen_sec: number
+  heat: Heat
+  online: boolean
+  unread: number
+  mine: boolean
+  is_ghost: boolean
+  ring_hue: null
+  ring_chroma: null
+  ring_lightness: null
+  ring_sat: null
+  ring_stage: null
 }

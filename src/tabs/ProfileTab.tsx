@@ -7,7 +7,7 @@ import { ErrorBanner } from '../components/ErrorBanner'
 import { Spinner } from '../components/Spinner'
 import { useInbox } from '../hooks/useInbox'
 import { useProfile } from '../hooks/useProfile'
-import type { MessageSearch, Photo, Result } from '../types/api.types'
+import type { MessageSearch, MessageSearchResult, Photo } from '../types/api.types'
 
 interface Props {
   profile: SelectedProfile | null
@@ -52,8 +52,8 @@ export function ProfileTab({ profile, onOpenThread }: Props) {
       if (!sent) throw new Error('OINK could not be sent. Please try again.')
 
       const res = (await searchMessages('oink')) as MessageSearch | null
-      const found: Result | undefined =
-        res?.results?.find((r: Result) => r.name === data.nick) ?? res?.results?.[0]
+      const found: MessageSearchResult | undefined =
+        res?.results?.find((r: MessageSearchResult) => r.name === data.nick) ?? res?.results?.[0]
 
       if (!found) throw new Error('Could not locate new conversation. Check your Messages tab.')
       onOpenThread(found.id)

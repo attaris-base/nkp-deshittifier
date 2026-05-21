@@ -1,4 +1,11 @@
-import type { Grid, OinkGridParams, Profile, ProfileQueryParams } from './types/api.types'
+import type {
+  Grid,
+  OinkGridParams,
+  PigsResponse,
+  PigsResponsePig,
+  Profile,
+  ProfileQueryParams,
+} from './types/api.types'
 
 // Fetch csrf token value:
 export const fetchCSRF = async () => {
@@ -300,6 +307,79 @@ export async function fetchOinkGrid({
   return await response.json()
 }
 
+export const fetchGridDistance = async (lat: number, lng: number, user_id: number) => {
+  const grid = await fetchOinkGrid({ lat, lng })
+  const userData = grid.pigs.find((v) => v.id === user_id)
+  console.log(userData)
+  return {
+    distance: userData?.distance_mi,
+    string: userData?.distance_str,
+    doppler: userData?.doppler.meters_raw,
+  }
+}
+
+export async function fetchOinkPigs({
+  lat,
+  lng,
+  radius = 40000, // Updated default per instructions
+  limit = 200,
+  action = 'pigs',
+}: {
+  lat: number
+  lng: number
+  radius?: number
+  limit?: number
+  action?: string
+}): Promise<PigsResponse> {
+  const baseUrl = 'https://nastykinkpigs.com/mobile/oink/index.php'
+
+  // Construct query parameters
+  const params = new URLSearchParams({
+    action,
+    radius: radius.toString(),
+    lat: lat.toString(),
+    lng: lng.toString(),
+    limit: limit.toString(),
+  })
+
+  const url = `${baseUrl}?${params.toString()}`
+
+  const response = await fetch(url, {
+    method: 'GET',
+    headers: {
+      accept: 'application/json',
+      'accept-language': 'en-US,en;q=0.7',
+      'cache-control': 'no-cache',
+      'content-type': 'application/json',
+      pragma: 'no-cache',
+      priority: 'u=1, i',
+      'sec-ch-ua': '"Not A;Brand";v="99", "Chromium";v="148", "Google Chrome";v="148"',
+      'sec-ch-ua-mobile': '?1',
+      'sec-ch-ua-platform': '"Android"',
+      'sec-fetch-dest': 'empty',
+      'sec-fetch-mode': 'cors',
+      'sec-fetch-site': 'same-origin',
+      'sec-gpc': '1',
+    },
+    referrer: 'https://nastykinkpigs.com/mobile/oink/',
+    mode: 'cors',
+    credentials: 'include',
+  })
+
+  if (!response.ok) {
+    throw new Error(`Network response was not ok: ${response.statusText}`)
+  }
+
+  return await response.json()
+}
+
+export const fetchPigsDistance = async (lat: number, lng: number, user_id: number) => {
+  const pigs = await fetchOinkPigs({ lat, lng })
+  const userData = pigs.pigs.find((v: PigsResponsePig) => v.id === user_id)
+  console.log(userData)
+  return userData?.distance_m
+}
+
 // Fetch user profile:
 
 /**
@@ -353,3 +433,194 @@ export async function fetchProfileData({
 
   return await response.json()
 }
+
+// export const getUserLocation = async (user_id: number, lat: number, lng: number) => {
+//   let closest: { lat: number; lng: number; distance: number } = { lat: 0, lng: 0, distance: 0 }
+//   const EARTH_RADIUS_METERS = 6378000
+
+//   const toRadians = (deg: number) => (deg * Math.PI) / 180
+//   const toDegrees = (rad: number) => (180 * rad) / Math.PI
+
+//   const haversineDistanceMeters = (
+//     lat1: number,
+//     lng1: number,
+//     lat2: number,
+//     lng2: number,
+//   ): number => {
+//     const dLat = toRadians(lat2 - lat1)
+//     const dLng = toRadians(lng2 - lng1)
+//     const lat1Rad = toRadians(lat1)
+//     const lat2Rad = toRadians(lat2)
+//     const a =
+//       Math.sin(dLat / 2) ** 2 + Math.cos(lat1Rad) * Math.cos(lat2Rad) * Math.sin(dLng / 2) ** 2
+//     return 6371e3 * (2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)))
+//   }
+
+//   function destinationPoint(lat: number, lng: number, distMeters: number, bearingDeg: number) {
+//     const latRad = toRadians(lat)
+//     const lngRad = toRadians(lng)
+//     const bearingRad = toRadians(bearingDeg)
+//     const newLat = Math.asin(
+//       Math.sin(latRad) * Math.cos(distMeters / EARTH_RADIUS_METERS) +
+//         Math.cos(latRad) * Math.sin(distMeters / EARTH_RADIUS_METERS) * Math.cos(bearingRad),
+//     )
+//     const newLng =
+//       lngRad +
+//       Math.atan2(
+//         Math.sin(bearingRad) * Math.sin(distMeters / EARTH_RADIUS_METERS) * Math.cos(latRad),
+//         Math.cos(distMeters / EARTH_RADIUS_METERS) - Math.sin(latRad) * Math.sin(newLat),
+//       )
+//     return { lat: toDegrees(newLat), lng: toDegrees(newLng) }
+//   }
+
+//   const getUserDistance = async (user_id: number, lat: number, lng: number) => {
+//     const profileData = await fetchProfileData({ id: user_id, lat, lng })
+//     const distanceString = profileData.distance
+//     if (distanceString[0] === '<') {
+//       return { lat, lng, distance: -1 }
+//     }
+//     const distance: number = +distanceString.slice(0, distanceString.length - 3)
+//     return { lat, lng, distance }
+//   }
+
+//   // — Trilateration
+//   const trilaterationStep = async (
+//     params: { lat: number; lng: number; user_id: number },
+//     allProbePoints: Array<{ lat: number; lng: number; distance: number }>,
+//   ): Promise<{ lat: number; lng: number; distance: number; user_id: number }> => {
+//     const { lat, lng, user_id } = params
+//     const central = await getUserDistance(user_id, lat, lng)
+//     const northPt = destinationPoint(lat, lng, central.distance, 0)
+//     const north = await getUserDistance(user_id, northPt.lat, northPt.lng)
+//     const southPt = destinationPoint(lat, lng, central.distance, 0)
+//     const south = await getUserDistance(user_id, southPt.lat, southPt.lng)
+//     const eastPt = destinationPoint(lat, lng, central.distance, 90)
+//     const east = await getUserDistance(user_id, eastPt.lat, eastPt.lng)
+//     const westPt = destinationPoint(lat, lng, central.distance, 270)
+//     const west = await getUserDistance(user_id, westPt.lat, westPt.lng)
+
+//     const probePoints = { central, north, south, east, west }
+
+//     // Generate all pairs
+//     const values = [...Object.values(probePoints), ...allProbePoints]
+//     for (const point of values) {
+//       if (point.distance === -1) {
+//         return { ...point, user_id }
+//       }
+//     }
+//     const pointPairs: Array<{ p1: typeof central; p2: typeof central }> = []
+//     for (let i = 0; i < values.length; i++) {
+//       for (let j = i + 1; j < values.length; j++) {
+//         if (values[i].lat !== values[j].lat && values[i].lng !== values[j].lng) {
+//           pointPairs.push({ p1: values[i], p2: values[j] })
+//         }
+//       }
+//     }
+//     // Compute circle intersections for each pair
+//     const intersections = pointPairs.map(({ p1, p2 }) => {
+//       const lat1Rad = toRadians(p1.lat)
+//       const lng1Rad = toRadians(p1.lng)
+//       const lat2Rad = toRadians(p2.lat)
+//       const lng2Rad = toRadians(p2.lng)
+//       const pairDist = haversineDistanceMeters(p1.lat, p1.lng, p2.lat, p2.lng)
+
+//       if (p1.distance + p2.distance < pairDist || Math.abs(p1.distance - p2.distance) > pairDist) {
+//         return null
+//       }
+
+//       const angDist = pairDist / EARTH_RADIUS_METERS
+//       const angR1 = p1.distance / EARTH_RADIUS_METERS
+//       const angR2 = p2.distance / EARTH_RADIUS_METERS
+//       const alpha = Math.acos(
+//         (Math.cos(angR2) - Math.cos(angR1) * Math.cos(angDist)) /
+//           (Math.sin(angR1) * Math.sin(angDist)),
+//       )
+//       const bearing = Math.atan2(
+//         Math.sin(lng2Rad - lng1Rad) * Math.cos(lat2Rad),
+//         Math.cos(lat1Rad) * Math.sin(lat2Rad) -
+//           Math.sin(lat1Rad) * Math.cos(lat2Rad) * Math.cos(lng2Rad - lng1Rad),
+//       )
+
+//       const computePoint = (brg: number) => {
+//         const newLat = Math.asin(
+//           Math.sin(lat1Rad) * Math.cos(angR1) + Math.cos(lat1Rad) * Math.sin(angR1) * Math.cos(brg),
+//         )
+//         const newLng =
+//           lng1Rad +
+//           Math.atan2(
+//             Math.sin(brg) * Math.sin(angR1) * Math.cos(lat1Rad),
+//             Math.cos(angR1) - Math.sin(lat1Rad) * Math.sin(newLat),
+//           )
+//         // debugger
+//         return { lat: toDegrees(newLat), lng: toDegrees(newLng) }
+//       }
+
+//       const candidate1 = computePoint(bearing + alpha)
+//       const candidate2 = computePoint(bearing - alpha)
+
+//       if (
+//         Math.abs(candidate1.lat - candidate2.lat) < 1e-10 &&
+//         Math.abs(candidate1.lng - candidate2.lng) < 1e-10
+//       ) {
+//         return [candidate1]
+//       }
+//       return [candidate1, candidate2]
+//     })
+
+//     // Disambiguate: pick the closer intersection point
+//     const disambiguated = intersections.map((pair) => {
+//       if (pair?.length === 2) {
+//         let err0 = 0
+//         let err1 = 0
+//         for (const ref of allProbePoints) {
+//           const d0 = haversineDistanceMeters(ref.lat, ref.lng, pair[0].lat, pair[0].lng)
+//           const d1 = haversineDistanceMeters(ref.lat, ref.lng, pair[1].lat, pair[1].lng)
+//           err0 += Math.abs(d0 - ref.distance)
+//           err1 += Math.abs(d1 - ref.distance)
+//         }
+//         // debugger
+//         return err0 <= err1 ? [pair[0]] : [pair[1]]
+//       }
+//       return pair
+//     })
+
+//     const validPoints = disambiguated
+//       .filter(
+//         (pts): pts is { lat: number; lng: number }[] =>
+//           pts != null && pts.length > 0 && pts[0] != null,
+//       )
+//       .flat()
+
+//     const averaged = validPoints.reduce(
+//       (acc, pt) => ({
+//         lat: acc.lat + pt.lat / validPoints.length,
+//         lng: acc.lng + pt.lng / validPoints.length,
+//       }),
+//       { lat: 0, lng: 0 },
+//     )
+//     debugger
+//     const avgResult = await getUserDistance(user_id, averaged.lat, averaged.lng)
+//     const result = { ...averaged, distance: avgResult.distance }
+//     allProbePoints.push(result)
+
+//     if (result.distance !== -1) {
+//       closest = await trilaterationStep({ lat: result.lat, lng: result.lng, user_id }, [
+//         central,
+//         north,
+//         south,
+//         east,
+//         west,
+//         result,
+//         ...allProbePoints,
+//       ])
+//     }
+
+//     return { ...closest, user_id }
+//   }
+
+//   await trilaterationStep({ lat, lng, user_id }, [])
+//   const grid_distance = await fetchGridDistance(closest.lat, closest.lng, user_id)
+//   const pigs_distance = await fetchPigsDistance(closest.lat, closest.lng, user_id)
+//   console.log(grid_distance.distance, grid_distance.string, closest.distance, pigs_distance)
+//   return closest
+// }
