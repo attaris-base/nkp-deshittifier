@@ -50,3 +50,5 @@ export function useGeo() {
 
   return { ...state, request }
 }
+
+export type GeoReturn = ReturnType<typeof useGeo>
