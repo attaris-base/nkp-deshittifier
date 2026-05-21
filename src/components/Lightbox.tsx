@@ -166,6 +166,7 @@ export function Lightbox({ photos, initialIndex, onClose }: Props) {
         type="button"
         class="nkp-lightbox-arrow prev"
         style={{ opacity: index === 0 ? 0 : 1, pointerEvents: index === 0 ? 'none' : 'auto' }}
+        tabIndex={index === 0 ? -1 : 0}
         onClick={() => commitAdvance(-1)}
       >
         ‹
@@ -190,6 +191,7 @@ export function Lightbox({ photos, initialIndex, onClose }: Props) {
           opacity: index === photos.length - 1 ? 0 : 1,
           pointerEvents: index === photos.length - 1 ? 'none' : 'auto',
         }}
+        tabIndex={index === photos.length - 1 ? -1 : 0}
         onClick={() => commitAdvance(1)}
       >
         ›

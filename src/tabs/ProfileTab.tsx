@@ -4,6 +4,7 @@ import { searchMessages, sendOink } from '../api'
 import { Avatar } from '../components/Avatar'
 import { DopplerBadge } from '../components/DopplerBadge'
 import { ErrorBanner } from '../components/ErrorBanner'
+import { Lightbox } from '../components/Lightbox'
 import { Spinner } from '../components/Spinner'
 import { useInbox } from '../hooks/useInbox'
 import { useProfile } from '../hooks/useProfile'
@@ -19,6 +20,7 @@ export function ProfileTab({ profile, onOpenThread }: Props) {
   const inbox = useInbox()
   const [initiating, setInitiating] = useState(false)
   const [initError, setInitError] = useState<string | null>(null)
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null)
 
   if (!profile) {
     return (
@@ -87,12 +89,14 @@ export function ProfileTab({ profile, onOpenThread }: Props) {
       {data.photos.length > 0 && (
         <div class="nkp-photo-gallery">
           {data.photos.map((p: Photo, i: number) => (
+            // biome-ignore lint/a11y/useKeyWithClickEvents: gallery thumbnails open a lightbox; keyboard navigation is handled inside the Lightbox component
             <img
               key={i}
               src={p.url}
               alt={`Gallery ${i + 1}`}
               class="nkp-photo-thumb"
               loading="lazy"
+              onClick={() => setLightboxIndex(i)}
             />
           ))}
         </div>
@@ -147,6 +151,13 @@ export function ProfileTab({ profile, onOpenThread }: Props) {
             {initiating ? 'Contacting…' : `✉ Message ${data.nick}`}
           </button>
         </div>
+      )}
+      {lightboxIndex !== null && (
+        <Lightbox
+          photos={data.photos}
+          initialIndex={lightboxIndex}
+          onClose={() => setLightboxIndex(null)}
+        />
       )}
     </div>
   )
