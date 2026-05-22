@@ -116,7 +116,7 @@ export interface Grid {
 
 export interface Filters {
   radius_mi: number
-  window: string
+  window: '1h' | '8h' | '24h' | '7d'
   has_photo: boolean
   position: string
 }

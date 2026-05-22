@@ -13,7 +13,7 @@ interface Props {
   onViewProfile: (p: SelectedProfile) => void
 }
 
-const WINDOW_OPTIONS = ['1h', '6h', '24h', '7d'] as const
+const WINDOW_OPTIONS = ['1h', '8h', '24h', '7d'] as const
 const POSITION_OPTIONS = [
   { value: 'all', label: 'Any position' },
   { value: 'hungryhole', label: 'Hungry hole' },

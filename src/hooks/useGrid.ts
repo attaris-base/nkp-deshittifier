@@ -17,7 +17,7 @@ export interface GridFilters {
 }
 
 export const DEFAULT_FILTERS: GridFilters = {
-  radius: 25,
+  radius: 50,
   window: '24h',
   position: 'all',
 }

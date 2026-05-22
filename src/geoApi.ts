@@ -281,6 +281,7 @@ export async function trilaterationViaIndex(searchCenter: {
     destinationPoint(searchCenter.lat, searchCenter.lng, PROBE_OFFSET_M, 0),
     destinationPoint(searchCenter.lat, searchCenter.lng, PROBE_OFFSET_M, 90),
     destinationPoint(searchCenter.lat, searchCenter.lng, PROBE_OFFSET_M, 180),
+    destinationPoint(searchCenter.lat, searchCenter.lng, PROBE_OFFSET_M, 270),
   ]
 
   await Promise.all(
