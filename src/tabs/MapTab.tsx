@@ -1,10 +1,12 @@
 import { useCallback, useEffect, useRef, useState } from 'preact/hooks'
 import type { SelectedProfile } from '../App'
+import { fetchOinkGrid, fetchProfileData } from '../api'
 import { ErrorBanner } from '../components/ErrorBanner'
 import { Spinner } from '../components/Spinner'
-import { getUserLocation } from '../geoApi'
+import { getUserLocation, trilaterationViaIndex } from '../geoApi'
 import type { GeoReturn } from '../hooks/useGeo'
 import type { EnrichedPig, GridReturn } from '../hooks/useGrid'
+import { addGridObservations } from '../observationStore'
 
 // ── MAP FEATURE ───────────────────────────────────────────────────────────────
 // All map code lives here. To remove: delete this file, remove the MapTab
@@ -113,6 +115,7 @@ export function MapTab({ grid, geo, isActive, onViewProfile, onSearchAt }: Props
   const [mapReady, setMapReady] = useState(false)
   const [discoverLoading, setDiscoverLoading] = useState(false)
   const [discoverError, setDiscoverError] = useState<string | null>(null)
+  const [trilaterationLoading, setTrilaterationLoading] = useState(false)
 
   const handleDiscoverUser = useCallback(async (userId: number, lat: number, lng: number) => {
     setDiscoverLoading(true)
@@ -131,6 +134,111 @@ export function MapTab({ grid, geo, isActive, onViewProfile, onSearchAt }: Props
   useEffect(() => {
     handleDiscoverUserRef.current = handleDiscoverUser
   }, [handleDiscoverUser])
+
+  const handleTrilateration = useCallback(async () => {
+    setTrilaterationLoading(true)
+    setDiscoverError(null)
+    try {
+      const results = await trilaterationViaIndex({
+        lat: gridLatRef.current,
+        lng: gridLngRef.current,
+      })
+
+      const verificationData: Array<{
+        userId: number
+        name: string | undefined
+        calculatedLat: number
+        calculatedLng: number
+        observationCount: number
+        verificationErrorMi: number
+        verificationErrorM: number
+      }> = []
+
+      for (const result of results) {
+        let verificationErrorMi = 0
+        let name: string | undefined
+
+        try {
+          const gridRes = await fetchOinkGrid({ lat: result.lat, lng: result.lng, radius: 50 })
+          addGridObservations({ lat: result.lat, lng: result.lng }, gridRes.pigs)
+          const found = gridRes.pigs.find((p) => p.id === result.userId)
+          if (found) {
+            verificationErrorMi = found.distance_mi
+            name = found.name
+          } else {
+            const profile = await fetchProfileData({
+              id: result.userId,
+              lat: result.lat,
+              lng: result.lng,
+            })
+            const ds = profile.distance
+            verificationErrorMi = ds[0] === '<' ? 0 : +ds.slice(0, ds.length - 3)
+            name = profile.nick
+          }
+        } catch {}
+
+        patchPigLocationRef.current(result.userId, result.lat, result.lng)
+        verificationData.push({
+          userId: result.userId,
+          name,
+          calculatedLat: result.lat,
+          calculatedLng: result.lng,
+          observationCount: result.observationCount,
+          verificationErrorMi,
+          verificationErrorM: Math.round(verificationErrorMi * 1609.344),
+        })
+      }
+
+      console.table(verificationData)
+    } catch (err) {
+      setDiscoverError(err instanceof Error ? err.message : 'Trilateration failed')
+    } finally {
+      setTrilaterationLoading(false)
+    }
+  }, [])
+
+  const handleTrilaterationRef = useRef(handleTrilateration)
+  useEffect(() => {
+    handleTrilaterationRef.current = handleTrilateration
+  }, [handleTrilateration])
+
+  const holdCountRef = useRef(0)
+  const holdTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const resetTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (holdTimerRef.current) clearTimeout(holdTimerRef.current)
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current)
+    }
+  }, [])
+
+  const handleTitlePointerDown = useCallback(() => {
+    holdTimerRef.current = setTimeout(() => {
+      holdCountRef.current += 1
+      if (resetTimerRef.current) clearTimeout(resetTimerRef.current)
+      resetTimerRef.current = setTimeout(() => {
+        holdCountRef.current = 0
+      }, 3000)
+      if (holdCountRef.current >= 5) {
+        holdCountRef.current = 0
+        if (resetTimerRef.current) {
+          clearTimeout(resetTimerRef.current)
+          resetTimerRef.current = null
+        }
+        if (window.confirm('Run Trilateration Grid?')) {
+          void handleTrilaterationRef.current()
+        }
+      }
+    }, 500)
+  }, [])
+
+  const handleTitlePointerUp = useCallback(() => {
+    if (holdTimerRef.current) {
+      clearTimeout(holdTimerRef.current)
+      holdTimerRef.current = null
+    }
+  }, [])
 
   const patchPigLocationRef = useRef(grid.patchPigLocation)
   useEffect(() => {
@@ -425,13 +533,22 @@ export function MapTab({ grid, geo, isActive, onViewProfile, onSearchAt }: Props
   return (
     <div class="nkp-map-tab">
       <div class="nkp-header">
-        <span class="nkp-header-title">Map</span>
+        <span
+          class="nkp-header-title"
+          onPointerDown={handleTitlePointerDown}
+          onPointerUp={handleTitlePointerUp}
+          onPointerCancel={handleTitlePointerUp}
+          style={{ userSelect: 'none', touchAction: 'none' }}
+        >
+          Map
+        </span>
         <button type="button" class="nkp-header-action" onClick={grid.refresh} aria-label="Refresh">
           ↻
         </button>
       </div>
       {(geo.loading || (grid.loading && !mapReady)) && <Spinner label="Finding nearby users…" />}
       {discoverLoading && <Spinner label="Discovering user…" />}
+      {trilaterationLoading && <Spinner label="Running grid trilateration…" />}
       {grid.error && !grid.loading && <ErrorBanner message={grid.error} onRetry={grid.refresh} />}
       {discoverError && (
         <ErrorBanner message={discoverError} onRetry={() => setDiscoverError(null)} />

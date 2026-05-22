@@ -1,5 +1,6 @@
 import { useCallback, useRef, useState } from 'preact/hooks'
 import { fetchOinkGrid } from '../api'
+import { addGridObservations } from '../observationStore'
 import type { Grid, OinkGridParams, Pig } from '../types/api.types'
 
 export type LocationSource = 'api' | 'discover'
@@ -59,16 +60,20 @@ export function useGrid(lat: number, lng: number) {
   lngRef.current = lng
 
   const loadPage = useCallback(async (page: number, currentFilters: GridFilters) => {
+    const lat = latRef.current
+    const lng = lngRef.current
     const params: OinkGridParams = {
-      lat: latRef.current,
-      lng: lngRef.current,
+      lat,
+      lng,
       radius: currentFilters.radius,
       window: currentFilters.window,
       position: currentFilters.position,
       page,
       page_size: 50,
     }
-    return fetchOinkGrid(params) as Promise<Grid>
+    const result = await fetchOinkGrid(params)
+    addGridObservations({ lat, lng }, result.pigs)
+    return result as Grid
   }, [])
 
   const load = useCallback(
