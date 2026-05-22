@@ -4,6 +4,7 @@ import { addGridObservations, getObservations } from './observationStore'
 // ─── Constants ────────────────────────────────────────────────────────────────
 
 const EARTH_RADIUS_METERS = 6_378_000
+const PROBE_OFFSET_M = 25 * 1609.344
 
 // ─── Math primitives ──────────────────────────────────────────────────────────
 
@@ -275,8 +276,6 @@ export async function trilaterationViaIndex(searchCenter: {
   lat: number
   lng: number
 }): Promise<TrilaterationGridResult[]> {
-  const PROBE_OFFSET_M = 25 * 1609.344
-
   const probePoints = [
     searchCenter,
     destinationPoint(searchCenter.lat, searchCenter.lng, PROBE_OFFSET_M, 0),
