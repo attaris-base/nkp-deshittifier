@@ -1,4 +1,5 @@
-import { fetchGridDistance, fetchProfileData } from './api'
+import { fetchGridDistance, fetchOinkGrid, fetchProfileData } from './api'
+import { addGridObservations, getObservations } from './observationStore'
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -250,4 +251,82 @@ export const getUserLocation = async (user_id: number, lat: number, lng: number)
     reverseGeocode(result.lat, result.lng),
   ])
   return { ...result, displayName: address.displayName, dopplerMeters: grid_distances.doppler }
+}
+
+// ─── Trilateration via grid index ─────────────────────────────────────────────
+
+export type TrilaterationGridResult = {
+  userId: number
+  name?: string
+  lat: number
+  lng: number
+  observationCount: number
+}
+
+/**
+ * Fires 4 grid probes around `searchCenter` (center, 25 mi N/E/S), feeds all
+ * results into the observation store, then trilateration-locates every user
+ * that has accumulated ≥3 observations (including any from prior normal fetches).
+ * Distances are stored in meters, so `circleIntersections` receives the correct
+ * unit (unlike the existing profile-based path which has a pre-existing miles/meters
+ * mismatch that this function does not inherit).
+ */
+export async function trilaterationViaIndex(searchCenter: {
+  lat: number
+  lng: number
+}): Promise<TrilaterationGridResult[]> {
+  const PROBE_OFFSET_M = 25 * 1609.344
+
+  const probePoints = [
+    searchCenter,
+    destinationPoint(searchCenter.lat, searchCenter.lng, PROBE_OFFSET_M, 0),
+    destinationPoint(searchCenter.lat, searchCenter.lng, PROBE_OFFSET_M, 90),
+    destinationPoint(searchCenter.lat, searchCenter.lng, PROBE_OFFSET_M, 180),
+  ]
+
+  await Promise.all(
+    probePoints.map(async (probe) => {
+      const res = await fetchOinkGrid({ lat: probe.lat, lng: probe.lng, radius: 50 })
+      addGridObservations(probe, res.pigs)
+    }),
+  )
+
+  const observations = getObservations()
+  const results: TrilaterationGridResult[] = []
+
+  for (const [userId, obs] of observations) {
+    if (obs.length < 3) continue
+
+    const pts: ProbePoint[] = obs.map((o) => ({
+      lat: o.probePoint.lat,
+      lng: o.probePoint.lng,
+      distance: o.distanceMeters,
+    }))
+
+    const validPoints: GeoPoint[] = []
+
+    for (let i = 0; i < pts.length; i++) {
+      for (let j = i + 1; j < pts.length; j++) {
+        const p1 = pts[i]
+        const p2 = pts[j]
+        if (p1.lat === p2.lat && p1.lng === p2.lng) continue
+        const candidates = circleIntersections(p1, p2)
+        if (!candidates) continue
+        if (candidates.length === 1) {
+          validPoints.push(candidates[0])
+        } else {
+          validPoints.push(disambiguate(candidates as [GeoPoint, GeoPoint], pts))
+        }
+      }
+    }
+
+    if (validPoints.length === 0) continue
+
+    const lat = validPoints.reduce((s, p) => s + p.lat, 0) / validPoints.length
+    const lng = validPoints.reduce((s, p) => s + p.lng, 0) / validPoints.length
+
+    results.push({ userId, lat, lng, observationCount: obs.length })
+  }
+
+  return results
 }
